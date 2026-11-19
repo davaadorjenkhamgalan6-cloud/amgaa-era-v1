@@ -46,6 +46,16 @@
   ];
   const PRI = ['Яаралтай', 'Өндөр', 'Дунд', 'Бага'];
   // Үйлдлийн төгсгөлийн "(ЦБД 2.1)" ишлэлийг гарчгийн ард шилжүүлнэ: "Нэр (ЦБД 2.1). Үйлдэл."
+  // Заалтын ишлэлийг ("(ЖИШЭЭ НОРМ §Ж-2)", "(Ж-2)", "(ЦБД 2.1)", "[§1.7.32]") тайлангийн текстээс хасна
+  function stripRefs(text) {
+    return String(text || '')
+      .replace(/\s*\[[^\[\]]*§[^\[\]]*\]/g, '')
+      .replace(/\s*\((?:[^()]*§[^()]*|\s*(?:ЖИШЭЭ НОРМ|ЦБД|ТЭД)[^()]*|\s*[A-ZА-ЯЁӨҮ]{1,3}-\d+(?:\.\d+)*\s*(?:[,;]\s*[A-ZА-ЯЁӨҮ]{1,3}-\d+(?:\.\d+)*\s*)*)\)/g, '')
+      .replace(/\s+([.,;:!?])/g, '$1')
+      .replace(/\.{2,}/g, '.')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
   function splitRef(action) {
     const a = String(action || '').trim();
     const m = a.match(/\s*\(((?:ЦБД|ТЭД)[^()]*)\)\s*\.?\s*$/);
@@ -87,7 +97,7 @@
     const cl = insp.checklist || [];
     const bad = cl.filter((c) => c.status === 'violation' || c.status === 'partial');
     const observed = ai
-      ? ai.findings.map((f) => `${f.title}. ${f.evidence}`.replace(/\.\./g, '.'))
+      ? ai.findings.map((f) => stripRefs(`${f.title}. ${f.evidence}`).replace(/\.\./g, '.'))
       : bad.map((c) => `${c.group}: ${c.item} — ${c.status === 'partial' ? 'хэсэгчлэн хангасан' : 'зөрчилтэй'}${c.note ? '. ' + c.note : ''}`);
 
     return {
@@ -97,16 +107,16 @@
         voltage: insp.voltage_v ? `${insp.voltage_v} В` : '', date: fmtDate(insp.inspection_date), engineer: insp.engineer_name || '',
       },
       rows, score: { ...score, code: gg[1], label: gg[2] },
-      summary: ai ? ai.summary : '',
+      summary: ai ? stripRefs(ai.summary) : '',
       observed, observations: insp.observations || '',
       measurements: (insp.measurements || []).filter((m) => m.name),
       clarify: cl.filter((c) => c.status === 'clarify').map((c) => `${c.group}: ${c.item}${c.note ? ' — ' + c.note : ''}`),
-      risks: ai ? ai.potential_risks : null,
-      recs: ai ? ai.recommendations.map((r) => ({ action: r.action, priority: r.priority, days: r.deadline_days, title: r.title || '',
+      risks: ai ? (ai.potential_risks || []).map(stripRefs) : null,
+      recs: ai ? ai.recommendations.map((r) => ({ action: stripRefs(r.action), priority: r.priority, days: r.deadline_days, title: stripRefs(r.title || ''),
         group: ['ЦБД', 'ТЭД', 'Бусад'].includes(r.group) ? r.group : /ТЭД/.test(r.action || '') ? 'ТЭД' : /ЦБД/.test(r.action || '') ? 'ЦБД' : 'Бусад',
-        norms: (r.norm_refs || []).map((id) => { const n = (ai.norms || []).find((x) => x.id === id); return n ? (n.code || n.title) + (n.section ? ' §' + n.section : '') : id; }) })) : null,
+        norms: [] })) : null,   // заалтын ишлэлийг тайланд гаргахгүй
       toVerify: ai ? ai.to_verify || [] : [],
-      conclusion: ai ? ai.conclusion : '',
+      conclusion: ai ? stripRefs(ai.conclusion) : '',
       ai: Boolean(ai),
       photos: ((att && att.photos) || []).map((p, i) => {
         const ind = indicators.find(([no]) => String(no) === String(p.ind));

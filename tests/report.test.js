@@ -34,15 +34,16 @@ test('AI дүгнэлтгүй бол эрсдэл, зөвлөмж хоосон; 
   assert.match(html, /<tr class="hl"><td[^>]*><b>AA</);
 });
 
-test('AI дүгнэлт байвал текст, зөвлөмж, нормын нэр тайланд орно', () => {
+test('AI дүгнэлт байвал текст, зөвлөмж тайланд орно, заалтын ишлэл гарахгүй', () => {
   const ai = JSON.parse(readFileSync(new URL('./fixtures/model-response.json', import.meta.url), 'utf8'));
   ai.norms = [{ id: 'N1', code: 'ЦБД', section: '1.7' }];
   ai.recommendations[0].norm_refs = ['N1'];
   ai.score = { pct: 61.2, raw: 92, max: 150 };
   const m = R.buildModel(insp(byNo([7, 6, 7, 5, 8, 4, 3, 6, 5, 7, 8, 4, 9, 6, 7])), IND, ai);
   assert.equal(m.score.code, 'B');
-  assert.deepEqual(m.recs[0].norms, ['ЦБД §1.7']);
+  assert.deepEqual(m.recs[0].norms, []);
   const html = R.toHtml(m, '/');
+  assert.ok(!html.includes('§'), 'тайланд § ишлэл гарахгүй');
   assert.match(html, /61\.2%-р тогтоогдсон/);
   assert.ok(!html.includes(ai.conclusion), 'AI-ийн дүгнэлтийн догол мөр тайланд орохгүй');
 });
@@ -52,7 +53,7 @@ test('файлын нэрээс хориотой тэмдэгт хасна', () 
   assert.equal(R.fileName(m, 'docx'), 'А Б Тест ХХК - Цахилгааны эрсдэлийн тайлан 2026-11-04.docx');
 });
 
-test('зөвлөмж бүлгээр (ЦБД → ТЭД), зэргээр эрэмбэлэгдэж, ишлэл гарчгийн ард шилжинэ', () => {
+test('зөвлөмж бүлгээр (ЦБД → ТЭД), зэргээр эрэмбэлэгдэж, текстийн заалтын ишлэл хасагдана', () => {
   const ai = JSON.parse(readFileSync(new URL('./fixtures/model-response.json', import.meta.url), 'utf8'));
   ai.norms = [];
   ai.recommendations.forEach((r) => { r.norm_refs = []; });
@@ -63,7 +64,7 @@ test('зөвлөмж бүлгээр (ЦБД → ТЭД), зэргээр эрэм
   const cbd = html.slice(i1, i2);
   assert.ok(cbd.indexOf('Самбарын таг ба хаалга') < cbd.indexOf('Гэмтэлтэй кабель солих'), 'Яаралтай зөвлөмжүүд эхэнд');
   assert.ok(cbd.indexOf('Гэмтэлтэй кабель солих') < cbd.indexOf('RCD хамгаалалт'), 'Өндөр нь Яаралтайн дараа');
-  assert.match(cbd, /<b>Гэмтэлтэй кабель солих \(ЦБД 2\.1\)\.<\/b> Гэмтэлтэй кабелийг солих\./);
+  assert.match(cbd, /<b>Гэмтэлтэй кабель солих\.<\/b> Гэмтэлтэй кабелийг солих\./);
   assert.doesNotMatch(html, /<table><thead><tr><th class="c" style="width:6%">№<\/th><th>Арга хэмжээ/);
   assert.match(html, /Дээрх ажлуудыг хийж дуусгах төлөвлөгөөг/);
 });
