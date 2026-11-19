@@ -293,6 +293,9 @@
   .reg td { vertical-align:middle; }
   .st { font-size:12px; padding:2px 9px; border-radius:999px; white-space:nowrap; border:1px solid var(--line); color:var(--muted); }
   .st.done { color:var(--ok); border-color:rgba(52,211,153,.5); } .st.filled { color:var(--cyan); border-color:rgba(56,189,248,.5); }
+  .st.req { color:#fbbf24; border-color:rgba(251,191,36,.5); } .st.no { color:var(--err); border-color:rgba(248,113,113,.45); }
+  .reqbox { border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin:12px 0; }
+  .reqbox input { max-width:420px; } tr.dim td { opacity:.55; }
   .mini { padding:5px 10px; font-size:12.5px; } .mini.del { background:transparent; color:var(--err); border:1px solid rgba(248,113,113,.4); box-shadow:none; animation:none; }
   .mini.del::after { display:none; } .mini.del.sure { background:var(--err); color:#fff; }
   .status { white-space:nowrap; }
@@ -705,7 +708,7 @@ function route() {
   $('crumb').innerHTML = name ? `› <b>${esc(VIEWS[name])}</b>` : '';
   document.title = name ? `${VIEWS[name]} — AMGAA ERA` : 'AMGAA ERA — AI агент';
   if (['result', 'norms', 'recs', 'conclusion', 'review'].includes(name)) renderOutput(name);
-  if (name === 'registry') renderRegistry();
+  if (name === 'registry') { renderRegistry(); syncRequests(); }
   if (name === 'files') renderFiles();
   if (name === 'orgs') renderOrgs();
   if (name === 'org') renderOrg();
@@ -1006,6 +1009,7 @@ function deleteInspection(id, btn) {
 function statusOf(r) {
   if (r.result) return ['done', 'Дүгнэлт гарсан'];
   const dn = sectionDone(r.data || {});
+  if (r.request && !dn.checklist && !dn.scores) return ['req', 'Хүсэлтээр ирсэн'];
   return Object.values(dn).every(Boolean) ? ['filled', 'Бөглөсөн'] : ['', 'Бөглөж байна'];
 }
 let calMonth = new Date(); calMonth.setDate(1);
@@ -1224,6 +1228,64 @@ function newInspectionFor(id) {
   set('f_name', d.object_name); set('f_loc', d.location); set('f_eq', d.equipment); set('f_v', d.voltage_v);
   saveDraft();
 }
+// ================= Ирсэн үзлэгийн хүсэлт (amgaa-form → Google Sheet) =================
+// Зөвшөөрөгдсөн хүсэлт бүр автоматаар "Бүх үзлэг" жагсаалтад шинэ үзлэг болж орно.
+const REQ_URL = 'https://script.google.com/macros/s/AKfycby2BlODHGqv6pkayWV74rQgsOlFgEZzMyb8a3ME4F0Bus0QcTlhldrWwlDQz7FrhcTCLQ/exec';
+const REQ_KEY = 'amgaa_req_key', REQ_SEEN = 'amgaa_req_seen_v1';
+let incoming = [], reqErr = '', reqBusy = false, reqAt = '';
+const reqSeen = () => { try { return new Set(JSON.parse(store.get(REQ_SEEN) || '[]')); } catch { return new Set(); } };
+const reqRec = (id) => records.find((r) => r.request && r.request.id === id);
+const REQ_ST = { 'Зөвшөөрсөн': 'done', 'Хүлээгдэж буй': 'req', 'Татгалзсан': 'no' };
+function importRequest(q) {
+  if (reqRec(q.id)) return;
+  const r = { id: uid(), created: nowIso(), updated: nowIso(), result: null, request: q, data: {
+    object_name: q.object || '', location: q.address || '', inspection_date: q.preferredDate || '',
+    observations: `Үзлэгийн хүсэлт №${q.id} — ${q.type || ''}, ${q.priority || ''}\n${q.description || ''}\nХүсэлт гаргагч: ${q.requestedBy || ''} (${q.requesterEmail || ''})`,
+  } };
+  records.unshift(r);
+  const seen = reqSeen(); seen.add(q.id); store.set(REQ_SEEN, JSON.stringify([...seen]));
+}
+async function syncRequests() {
+  const key = store.get(REQ_KEY); if (!key || reqBusy) return;
+  reqBusy = true; reqErr = '';
+  try {
+    const out = await fetch(REQ_URL + '?op=list&key=' + encodeURIComponent(key)).then((r) => r.json());
+    if (!out.ok) throw new Error(out.error || 'Алдаа');
+    incoming = (out.requests || []).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    const seen = reqSeen(); let added = 0;
+    incoming.forEach((q) => { if (q.status === 'Зөвшөөрсөн' && !seen.has(q.id) && !reqRec(q.id)) { importRequest(q); added++; } });
+    if (added) persist();
+    reqAt = new Date().toTimeString().slice(0, 5);
+  } catch (e) { reqErr = 'Хүсэлтүүдийг татаж чадсангүй: ' + (e.message || e); }
+  reqBusy = false; updateStatus();
+  if (location.hash === '#/registry') renderRegistry(document.activeElement && document.activeElement.id === 'regQ');
+}
+function reqSaveKey() {
+  const v = ($('reqKey').value || '').trim(); if (!v) return;
+  store.set(REQ_KEY, v); syncRequests(); renderRegistry();
+}
+function reqForgetKey() { store.del(REQ_KEY); incoming = []; reqErr = ''; renderRegistry(); }
+function reqImport(id) { const q = incoming.find((x) => x.id === id); if (!q) return; importRequest(q); persist(); updateStatus(); renderRegistry(); }
+const reqNew = () => incoming.filter((q) => q.status === 'Хүлээгдэж буй' || (q.status === 'Зөвшөөрсөн' && !reqRec(q.id))).length;
+function reqTable() {
+  if (!store.get(REQ_KEY)) return `<div class="reqbox"><b>Формоор ирсэн хүсэлтүүдийг холбох</b>
+    <p class="muted">Apps Script дээр <code>showListKey</code> функцийг Run хийгээд Execution log-д гарах түлхүүрийг энд буулгана. Нэг удаа хийхэд хангалттай.</p>
+    <input id="reqKey" placeholder="Түлхүүр" autocomplete="off"> <button class="mini" onclick="reqSaveKey()">Холбох</button></div>`;
+  const rows = incoming.map((q) => { const rec = reqRec(q.id), st = REQ_ST[q.status] || '';
+    const act = rec ? `<button class="mini" onclick="openInspection('${rec.id}')">Нээх</button>`
+      : q.status === 'Татгалзсан' ? `<span class="muted">${esc(q.reason || '')}</span>`
+      : `<button class="mini sec" onclick="reqImport('${esc(q.id)}')">Үзлэгт оруулах</button>`;
+    return `<tr class="${q.status === 'Татгалзсан' ? 'dim' : ''}"><td style="white-space:nowrap">${esc(String(q.createdAt || '').slice(0, 10))}</td>
+      <td><b>${esc(q.object)}</b><div class="muted">${esc(q.address)}</div></td><td>${esc(q.type)}</td><td>${esc(q.priority)}</td>
+      <td style="white-space:nowrap">${esc(q.preferredDate || '—')}</td><td>${esc(q.requestedBy)}<div class="muted">${esc(q.requesterEmail)}</div></td>
+      <td><span class="st ${st}">${esc(q.status)}</span>${rec ? '<div class="muted">✓ бүртгэлд орсон</div>' : ''}</td><td>${act}</td></tr>`; }).join('');
+  return `${reqErr ? `<p class="filt" style="color:var(--err)">${esc(reqErr)}</p>` : ''}
+    <div class="actions" style="margin:10px 0"><button class="mini sec" onclick="syncRequests()">${reqBusy ? 'Татаж байна…' : '↻ Шинэчлэх'}</button>
+      <span class="muted">${reqAt ? 'Сүүлд шинэчилсэн: ' + reqAt + ' · ' : ''}Зөвшөөрөгдсөн хүсэлт «Бүх үзлэг» руу автоматаар орно.</span>
+      <span class="lnk muted" onclick="reqForgetKey()">Түлхүүр солих</span></div>
+    <div class="tw"><table class="reg"><tr><th>Ирсэн</th><th>Объект / хаяг</th><th>Төрөл</th><th>Яаралтай</th><th>Хүссэн огноо</th><th>Хүсэлт гаргагч</th><th>Төлөв</th><th></th></tr>
+      ${rows || `<tr><td colspan="8" class="muted">${reqBusy ? 'Татаж байна…' : 'Хүсэлт алга.'}</td></tr>`}</table></div>`;
+}
 function regSearch(v) { regQ = v; renderRegistry(true); }
 function regSet(tab, q) { regTab = tab; if (q !== undefined) { regQ = q; regFilter = null; } if (location.hash !== '#/registry') go('registry'); else renderRegistry(); }
 const match = (txt) => !regQ || txt.toLowerCase().includes(regQ.toLowerCase().trim());
@@ -1235,13 +1297,13 @@ function renderRegistry(keepFocus) {
   let shown = regFilter ? records.filter((r) => inspDate(r) === regFilter) : records;
   shown = shown.filter((r) => { const d = r.data || {}; return match([d.object_name, d.location, d.engineer_name].join(' ')); });
   const orgShown = orgs.filter((o) => match(o.name + ' ' + o.loc));
-  const table = regTab === 'orgs' ? orgTable(orgShown, regQ) : `
+  const table = regTab === 'req' ? reqTable() : regTab === 'orgs' ? orgTable(orgShown, regQ) : `
     <div class="tw"><table class="reg">
       <tr><th>#</th><th>Объект</th><th>Огноо</th><th>Инженер</th><th>Оноо</th><th>Зэрэглэл</th><th>Хавсралт</th><th>Төлөв</th><th></th></tr>
       ${shown.map((r) => { const i = records.indexOf(r); const d = r.data || {}; const sc = r.result?.conclusion.score || scoreOf(r); const [cls, label] = statusOf(r);
         return `<tr class="${r.id === currentId ? 'cur' : ''}" style="animation-delay:${(i * .06).toFixed(2)}s">
           <td>${records.length - i}</td>
-          <td>${esc(d.object_name || '(нэргүй үзлэг)')}${r.id === currentId ? '<div class="muted">● одоо нээлттэй</div>' : ''}</td>
+          <td>${esc(d.object_name || '(нэргүй үзлэг)')}${r.request ? `<div class="muted">📥 ${esc(r.request.requestedBy || 'Хүсэлт')} · ${esc(r.request.priority || '')}</div>` : ''}${r.id === currentId ? '<div class="muted">● одоо нээлттэй</div>' : ''}</td>
           <td style="white-space:nowrap">${esc(d.inspection_date || fmtDay(r.created))}</td>
           <td>${esc(d.engineer_name || '—')}</td>
           <td>${sc ? sc.pct + '%' : '—'}</td>
@@ -1269,6 +1331,7 @@ function renderRegistry(keepFocus) {
     <div class="tabs">
       <button class="tab${regTab === 'orgs' ? ' on' : ''}" onclick="regSet('orgs')">🏢 Байгууллагын жагсаалт (${orgs.length})</button>
       <button class="tab${regTab === 'all' ? ' on' : ''}" onclick="regSet('all')">📋 Бүх үзлэг (${records.length})</button>
+      <button class="tab${regTab === 'req' ? ' on' : ''}" onclick="regSet('req')">📥 Ирсэн хүсэлт${reqNew() ? ` (${reqNew()})` : ''}</button>
       <input id="regQ" placeholder="🔍 Нэр, байршил, инженерээр хайх" value="${esc(regQ)}" oninput="regSearch(this.value)">
     </div>
     ${table}
@@ -1309,6 +1372,7 @@ function exportCsv() {
 }
 loadDB(); applyData(cur().data); autoScores(); lastResult = cur().result || null;
 refreshFiles();
+syncRequests(); setInterval(syncRequests, 5 * 60 * 1000);
 $('form').addEventListener('input', saveDraft);
 $('form').addEventListener('change', saveDraft);
 
