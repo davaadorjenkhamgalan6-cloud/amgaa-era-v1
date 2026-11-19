@@ -237,6 +237,44 @@
   .bar.weak .fill { background:linear-gradient(90deg,#b45309,#fbbf24); box-shadow:0 0 12px rgba(251,191,36,.5); }
   .bar .name { position:absolute; left:8px; top:2px; font-size:12px; color:#e6ecff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; right:8px; z-index:1; }
   .bar .val { text-align:right; font-weight:700; }
+  /* ---- Байгууллагын хуудас (#/org/...) ---- */
+  .og-crumb { font-size:12px; color:var(--muted); margin-bottom:6px; } .og-crumb b { color:#c7d2fe; }
+  .og-eyebrow { font-size:11px; letter-spacing:1.6px; font-weight:700; color:#a78bfa; text-transform:uppercase; }
+  .og-head { display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
+  .og-head h2 { margin:4px 0 2px; font-size:26px; } .og-head .sub { color:var(--muted); font-size:13.5px; }
+  .og-acts { display:flex; gap:8px; flex-wrap:wrap; }
+  .og-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+  .og-kpi { border:1px solid var(--line); border-radius:12px; padding:12px 14px; background:var(--panel2); animation:fadeUp .5s both; }
+  .og-kpi .t { font-size:12px; color:var(--muted); display:flex; justify-content:space-between; } .og-kpi b { display:block; font-size:24px; margin:4px 0 0; color:#fff; }
+  .og-kpi .s { font-size:11.5px; color:var(--muted); }
+  .og-grid { display:grid; grid-template-columns:1fr 1.3fr; gap:14px; margin-bottom:14px; }
+  .og-box { border:1px solid var(--line); border-radius:14px; background:var(--panel2); padding:16px; min-width:0; }
+  .og-box h3 { margin:0 0 2px; font-size:15px; display:flex; align-items:center; gap:8px; justify-content:space-between; } .og-box .bsub { font-size:12px; color:var(--muted); margin-bottom:12px; }
+  .og-obj { display:flex; gap:12px; align-items:center; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px; background:rgba(79,140,255,.05); }
+  .og-obj .ic { width:42px; height:42px; border-radius:10px; display:grid; place-items:center; background:linear-gradient(135deg,#2563eb,#7c3aed); font-size:20px; flex:none; }
+  .og-dl { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; margin:0 0 12px; } .og-dl dt { font-size:11.5px; color:var(--muted); } .og-dl dd { margin:0; font-weight:700; font-size:13.5px; word-break:break-word; }
+  .og-steps { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+  .og-step { border:1px solid var(--line); border-radius:10px; padding:10px 6px; text-align:center; font-size:12.5px; line-height:1.35; position:relative; }
+  .og-step .no { font-size:11px; color:var(--muted); } .og-step b { display:block; margin:3px 0; } .og-step .ss { font-size:11.5px; color:var(--muted); }
+  .og-step.done { border-color:rgba(52,211,153,.55); background:rgba(52,211,153,.08); } .og-step.done .ss { color:var(--ok); }
+  .og-step.now { border-color:var(--blue); box-shadow:var(--glow); } .og-step.now .ss { color:var(--cyan); }
+  .og-step.ret { border-color:rgba(248,113,113,.6); background:var(--err-bg); } .og-step.ret .ss { color:var(--err); }
+  .og-prog { height:6px; border-radius:99px; background:rgba(255,255,255,.07); margin:12px 0 4px; overflow:hidden; } .og-prog i { display:block; height:100%; background:linear-gradient(90deg,#4f8cff,#a78bfa,#34d399); }
+  .og-res { border:1px solid rgba(52,211,153,.45); background:rgba(52,211,153,.07); border-radius:12px; padding:12px 14px; margin-top:12px; }
+  .og-res.warn { border-color:rgba(251,191,36,.45); background:var(--warn-bg); } .og-res.err { border-color:rgba(248,113,113,.5); background:var(--err-bg); }
+  .og-res .k { font-size:11px; letter-spacing:1.4px; color:var(--muted); font-weight:700; }
+  .og-tabs { display:flex; gap:6px; flex-wrap:wrap; border-bottom:1px solid var(--line); padding-bottom:10px; margin-bottom:12px; }
+  .og-tabs button { background:transparent; color:#c7d2fe; border:1px solid transparent; box-shadow:none; animation:none; padding:7px 12px; font-size:13px; }
+  .og-tabs button::after { display:none; } .og-tabs button.on { border-color:var(--violet); background:rgba(139,92,246,.15); color:#fff; }
+  .og-chips { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; } .og-chip { font-size:12px; padding:3px 10px; border-radius:999px; border:1px solid var(--line); }
+  .og-chip.ok { color:var(--ok); border-color:rgba(52,211,153,.5); } .og-chip.w { color:var(--warn); border-color:rgba(251,191,36,.5); } .og-chip.e { color:var(--err); border-color:rgba(248,113,113,.5); } .og-chip.c { color:var(--cyan); border-color:rgba(56,189,248,.5); }
+  .og-two { display:grid; grid-template-columns:1.6fr 1fr; gap:12px; }
+  .og-gauge { display:flex; align-items:center; gap:16px; } .og-gauge svg { width:120px; height:120px; flex:none; }
+  .og-ck td, .og-ck th { font-size:13px; } .og-ck .grp td { background:rgba(79,140,255,.08); font-weight:700; color:#c7d2fe; }
+  .og-rec { border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; } .og-rec .h { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .pr { font-size:11.5px; padding:1px 9px; border-radius:999px; font-weight:700; }
+  .pr.u { background:var(--err-bg); color:var(--err); } .pr.h { background:var(--warn-bg); color:var(--warn); } .pr.m { background:rgba(56,189,248,.12); color:var(--cyan); } .pr.l { background:var(--ok-bg); color:var(--ok); }
+  @media (max-width:860px) { .og-kpis { grid-template-columns:1fr 1fr; } .og-grid, .og-two { grid-template-columns:1fr; } .og-steps { grid-template-columns:1fr 1fr; } }
   .kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:10px; margin:12px 0; }
   .kpi { border:1px solid var(--line); border-radius:12px; padding:12px; background:var(--panel2); text-align:center; animation:fadeUp .5s both; }
   .kpi b { display:block; font-size:24px; color:#fff; text-shadow:0 0 12px rgba(125,170,255,.7); }
@@ -487,6 +525,7 @@
   <section class="view card no-print" data-view="review" id="v-review"></section>
   <section class="view card no-print" data-view="registry" id="v-registry"></section>
   <section class="view card no-print" data-view="orgs" id="v-orgs"></section>
+  <section class="view card no-print" data-view="org" id="v-org"></section>
 
   <!-- ============ ЦБД ЧАТБОТ ============ -->
   <section class="view card no-print" data-view="chat" id="v-chat">
@@ -547,7 +586,7 @@ const STATUSES = [['not_checked','Шалгаагүй'],['ok','Хэвийн'],['p
 const POINTS = { ok: 10, partial: 5, violation: 0 };
 const VIEWS = {
   '': 'Төв', object: 'Объектын мэдээлэл', checklist: 'Шалгах хуудас', scores: '15 үзүүлэлт', measure: 'Хэмжилт',
-  files: 'Зураг, PDF хавсралт', agent: 'AI агент', registry: 'Үзлэгийн бүртгэл', orgs: 'Үзлэг хийсэн байгууллагууд', chat: 'ЦБД чатбот', result: 'Оноо, зэрэглэл', norms: 'Цахилгаан байгууламжийн дүрэм', recs: 'Зөвлөмж, хугацаа', conclusion: 'Дүгнэлтийн ноорог', review: 'Шууд удирдлага',
+  files: 'Зураг, PDF хавсралт', agent: 'AI агент', registry: 'Үзлэгийн бүртгэл', orgs: 'Үзлэг хийсэн байгууллагууд', org: 'Байгууллага', chat: 'ЦБД чатбот', result: 'Оноо, зэрэглэл', norms: 'Цахилгаан байгууламжийн дүрэм', recs: 'Зөвлөмж, хугацаа', conclusion: 'Дүгнэлтийн ноорог', review: 'Шууд удирдлага',
 };
 
 const $ = (id) => document.getElementById(id);
@@ -659,7 +698,8 @@ buildHero();
 // ================= Хуудас солих (#/нэр) =================
 function go(v) { location.hash = '#/' + v; }
 function route() {
-  const v = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
+  let v = decodeURIComponent(location.hash.replace(/^#\/?/, ''));
+  if (v.startsWith('org/')) { orgSel = v.slice(4); v = 'org'; }
   const name = v in VIEWS ? v : '';
   document.querySelectorAll('.view').forEach((el) => el.classList.toggle('active', el.dataset.view === name));
   $('crumb').innerHTML = name ? `› <b>${esc(VIEWS[name])}</b>` : '';
@@ -668,6 +708,7 @@ function route() {
   if (name === 'registry') renderRegistry();
   if (name === 'files') renderFiles();
   if (name === 'orgs') renderOrgs();
+  if (name === 'org') renderOrg();
   if (name === 'agent') renderNormsNote();
   if (name === 'chat' && window.renderChat) window.renderChat();
   scrollTo(0, 0);
@@ -1018,12 +1059,12 @@ function orgTable(list, q) {
       <tr><th>#</th><th>Байгууллага / объект</th><th>Байршил</th><th>Үзлэг</th><th>Сүүлийн үзлэг</th><th>Оноо</th><th>Зэрэглэл</th><th>Хавсралт</th><th></th></tr>
       ${list.map((o, i) => { const sc = o.lastRes?.result.conclusion.score || scoreOf(o.last);
         return `<tr class="${o.items.some((r) => r.id === currentId) ? 'cur' : ''}" style="animation-delay:${(i * .05).toFixed(2)}s">
-          <td>${i + 1}</td><td><b>${esc(o.name)}</b></td><td>${esc(o.loc || '—')}</td>
+          <td>${i + 1}</td><td><b class="lnk" onclick="openOrg('${encodeURIComponent(orgKey(o.name))}')">${esc(o.name)}</b></td><td>${esc(o.loc || '—')}</td>
           <td>${o.items.length > 1 ? `<span class="lnk" onclick="regSet('all', ${esc(JSON.stringify(o.name))})">${o.items.length} удаа</span>` : '1'}</td>
           <td style="white-space:nowrap">${esc(inspDate(o.last))}</td>
           <td>${sc ? sc.pct + '%' : '—'}</td><td>${sc ? `<span class="pill grade">${esc(sc.grade)}</span>` : '—'}</td>
           <td>${attHtml({ files: { photos: o.photos, docs: o.docs } })}</td>
-          <td style="white-space:nowrap"><button class="mini" onclick="openInspection('${o.last.id}')">Нээх</button></td></tr>`; }).join('')
+          <td style="white-space:nowrap"><button class="mini" onclick="openOrg('${encodeURIComponent(orgKey(o.name))}')">Нээх</button></td></tr>`; }).join('')
         || `<tr><td colspan="9" class="muted">${q ? 'Хайлтад тохирох байгууллага олдсонгүй.' : 'Үзлэг хараахан алга.'}</td></tr>`}
     </table></div>`;
 }
@@ -1052,6 +1093,136 @@ function renderOrgs(keepFocus) {
     <p class="muted" style="margin-top:12px">Нэг байгууллагад хэд хэдэн удаа үзлэг хийсэн бол нэг мөрөнд нэгтгэж, хамгийн сүүлийн үзлэгийн оноог харуулна. "N удаа" дээр дарж бүх үзлэгийг нь харна.</p>
     <div class="navrow"><button class="back" onclick="go('')">← Төв</button><button class="back" onclick="go('registry')">Үзлэгийн бүртгэл (календарь) →</button></div>`;
   if (keepFocus) { const q = $('orgQ'); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+}
+// ---- Байгууллагын дэлгэрэнгүй хуудас (#/org/<түлхүүр>) ----
+let orgSel = '', orgInsp = '', orgTab = 'sum';
+const CK_LABEL = { ok: 'Хэвийн', partial: 'Хэсэгчлэн', violation: 'Зөрчилтэй', na: 'Хамааралгүй', clarify: 'Тодруулах', not_checked: 'Шалгаагүй' };
+const CK_CLS = { ok: 'ok', partial: 'w', violation: 'e', clarify: 'c', na: '', not_checked: '' };
+const PR_CLS = { 'Яаралтай': 'u', 'Өндөр': 'h', 'Дунд': 'm', 'Бага': 'l' };
+function openOrg(key) { orgInsp = ''; orgTab = 'sum'; location.hash = '#/org/' + key; }
+function orgTabSet(t) { orgTab = t; renderOrg(); }
+function orgPick(id) { orgInsp = id; renderOrg(); }
+// Эрсдэлийн түвшин: оноо өндөр = эрсдэл бага
+function riskOf(sc) {
+  if (!sc) return { t: '—', c: 'var(--muted)' };
+  return sc.pct >= 80 ? { t: 'Бага', c: 'var(--ok)' } : sc.pct >= 60 ? { t: 'Дунд', c: 'var(--warn)' } : { t: 'Өндөр', c: 'var(--err)' };
+}
+function orgSteps(r) {
+  const d = r.data || {}, dn = sectionDone(d), rv = r.review || {};
+  const raw = [
+    ['Объектын мэдээлэл', dn.object], ['Талбайн үзлэг', dn.checklist], ['Үнэлгээ, хэмжилт', dn.scores && dn.measure],
+    ['AI дүгнэлт', Boolean(r.result)], ['Хянаж батлах', rv.status === 'approved'],
+  ];
+  let nowSet = false;
+  return raw.map(([t, ok], i) => {
+    let cls = ok ? 'done' : '', st = ok ? 'Дууссан' : 'Хүлээгдэж байна';
+    if (i === 4 && rv.status === 'returned') { cls = 'ret'; st = 'Засварт буцсан'; }
+    else if (!ok && !nowSet) { cls = 'now'; st = 'Хийгдэж байна'; nowSet = true; }
+    return { t, cls, st, ok };
+  });
+}
+function orgReview(id, status) {
+  const r = records.find((x) => x.id === id); if (!r) return;
+  r.review = { status, at: nowIso() }; r.updated = nowIso(); persist(); renderOrg();
+}
+function orgJson(id) {
+  const r = records.find((x) => x.id === id); if (!r) return;
+  EraFiles.download(new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' }), `${orgKey((r.data || {}).object_name).replace(/[^\p{L}\p{N}]+/gu, '-')}-${inspDate(r)}.json`);
+}
+function gaugeSvg(sc) {
+  const pct = sc ? Math.max(0, Math.min(100, sc.pct)) : 0, rk = riskOf(sc), C = 2 * Math.PI * 50;
+  return `<svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="11"/>
+    <circle cx="60" cy="60" r="50" fill="none" stroke="${rk.c}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${(C * pct / 100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/>
+    <text x="60" y="60" text-anchor="middle" fill="#fff" font-size="26" font-weight="800">${sc ? Math.round(sc.pct) : '—'}</text>
+    <text x="60" y="80" text-anchor="middle" fill="#8fa0c8" font-size="11">/100</text></svg>`;
+}
+function renderOrg() {
+  const el = $('v-org');
+  const o = orgList().find((x) => orgKey(x.name) === orgSel);
+  if (!o) { el.innerHTML = `<div class="empty"><span class="big-ico">🏢</span>Байгууллага олдсонгүй.</div><div class="navrow"><button class="back" onclick="go('orgs')">← Байгууллагууд</button></div>`; return; }
+  const r = o.items.find((x) => x.id === orgInsp) || o.lastRes || o.last;
+  const d = r.data || {}, c = r.result && r.result.conclusion, sc = (c && c.score) || scoreOf(r), rk = riskOf(sc);
+  const ck = d.checklist || [], cnt = (st) => ck.filter((x) => x.status === st).length;
+  const steps = orgSteps(r), doneN = steps.filter((x) => x.ok).length, rv = r.review || {};
+  const viol = cnt('violation'), part = cnt('partial');
+  const recs = c ? c.recommendations || [] : [];
+  // --- Таб: агуулга ---
+  let body = '';
+  if (orgTab === 'sum') {
+    body = `<div class="og-chips"><span class="og-chip ok">✓ Хэвийн ${cnt('ok')}</span><span class="og-chip e">⚠ Зөрчилтэй ${viol}</span><span class="og-chip w">◐ Хэсэгчлэн ${part}</span>${cnt('clarify') ? `<span class="og-chip c">? Тодруулах ${cnt('clarify')}</span>` : ''}${cnt('na') ? `<span class="og-chip">Хамааралгүй ${cnt('na')}</span>` : ''}</div>
+      <div class="og-two"><div class="og-box"><h3>Үзлэгийн нэгтгэсэн мэдээлэл</h3>
+        <p style="margin:8px 0"><b>Объект:</b> ${esc(d.object_name || '—')}${d.equipment ? ' · ' + esc(d.equipment) : ''}${d.voltage_v ? ' · ' + esc(d.voltage_v) + ' В' : ''}</p>
+        ${c && c.summary ? `<p style="margin:8px 0"><b>Дүгнэлт:</b> ${esc(c.summary)}</p>` : ''}
+        ${c && c.findings && c.findings.length ? `<p style="margin:8px 0 4px"><b>Илэрсэн зөрчил:</b></p><ul style="margin:0;padding-left:18px">${c.findings.slice(0, 6).map((f) => `<li>${esc(f.title)}${f.severity ? ` <span class="muted">(${esc(f.severity)})</span>` : ''}</li>`).join('')}</ul>`
+          : `<p class="muted" style="margin:8px 0">${r.result ? 'Зөрчил илрээгүй.' : 'AI дүгнэлт хараахан гараагүй байна.'}</p>`}
+        ${d.observations ? `<p style="margin:8px 0"><b>Анхаарах зүйл:</b> ${esc(d.observations)}</p>` : ''}</div>
+      <div class="og-box"><h3>Эрсдэлийн үнэлгээ</h3><div class="og-gauge" style="margin-top:8px">${gaugeSvg(sc)}<div>
+        <div class="muted" style="font-size:12px">Эрсдэлийн түвшин</div><div style="font-size:22px;font-weight:800;color:${rk.c}">${esc(rk.t)}</div>
+        <div class="muted" style="font-size:12.5px">${sc ? `Зэрэглэл: <b style="color:#fff">${esc(sc.grade)}</b>` : '15 үзүүлэлт бөглөөгүй'}</div></div></div>
+        <p class="muted" style="font-size:12px;margin:10px 0 0">Оноо өндөр байх тусам нийцэл сайн, эрсдэл бага.</p></div></div>`;
+  } else if (orgTab === 'ck') {
+    let g = '';
+    body = ck.length ? `<div class="tw"><table class="reg og-ck"><tr><th>Шалгах зүйл</th><th>Төлөв</th><th>Тайлбар</th></tr>${ck.map((x) => {
+      const head = x.group !== g ? `<tr class="grp"><td colspan="3">${esc(x.group || '')}</td></tr>` : ''; g = x.group;
+      return head + `<tr><td>${esc(x.item)}</td><td><span class="og-chip ${CK_CLS[x.status] || ''}">${esc(CK_LABEL[x.status] || x.status)}</span></td><td>${esc(x.note || '')}</td></tr>`; }).join('')}</table></div>`
+      : '<p class="muted">Шалгах хуудас бөглөөгүй байна.</p>';
+  } else if (orgTab === 'rec') {
+    body = recs.length ? recs.map((x) => `<div class="og-rec"><div class="h"><span class="pr ${PR_CLS[x.priority] || 'm'}">${esc(x.priority || '')}</span><b>${esc(x.title || '')}</b>
+        <span class="muted" style="margin-left:auto;font-size:12px">${x.group ? esc(x.group) + ' · ' : ''}${x.deadline_days ? x.deadline_days + ' хоног' : ''}</span></div>
+        <div style="font-size:13.5px;margin-top:4px">${esc(x.action || '')}</div></div>`).join('')
+      + (c && c.conclusion ? `<div class="og-box" style="margin-top:10px"><h3>Дүгнэлт</h3><p style="margin:6px 0 0">${esc(c.conclusion)}</p></div>` : '')
+      : `<p class="muted">${r.result ? 'Зөвлөмж алга.' : 'AI дүгнэлт гаргасны дараа зөвлөмж энд харагдана.'}</p>`;
+  } else {
+    body = `<div class="tw"><table class="reg"><tr><th>Огноо</th><th>Инженер</th><th>Оноо</th><th>Зэрэглэл</th><th>Төлөв</th><th></th></tr>${o.items.map((x) => {
+      const s2 = (x.result && x.result.conclusion.score) || scoreOf(x), [cl, lb] = statusOf(x), rv2 = x.review || {};
+      return `<tr class="${x.id === r.id ? 'cur' : ''}"><td style="white-space:nowrap">${esc(inspDate(x))}</td><td>${esc((x.data || {}).engineer_name || '—')}</td><td>${s2 ? s2.pct + '%' : '—'}</td>
+        <td>${s2 ? `<span class="pill grade">${esc(s2.grade)}</span>` : '—'}</td><td><span class="st ${rv2.status === 'approved' ? 'done' : cl}">${rv2.status === 'approved' ? 'Батлагдсан' : rv2.status === 'returned' ? 'Засварт буцсан' : esc(lb)}</span></td>
+        <td style="white-space:nowrap"><button class="mini sec" onclick="orgPick('${x.id}')">Харах</button> <button class="mini" onclick="openInspection('${x.id}')">Засах</button></td></tr>`; }).join('')}</table></div>`;
+  }
+  const resBox = rv.status === 'approved' ? ['', '✓ ДҮГНЭЛТ БАТЛАГДСАН', `Баталсан: ${esc(fmtDay(rv.at))}`]
+    : rv.status === 'returned' ? ['err', '↩ ЗАСВАРТ БУЦААСАН', `${esc(fmtDay(rv.at))} — инженер засаад AI дүгнэлтийг дахин гаргана.`]
+    : r.result ? ['warn', 'ХЯНАЛТ ХҮЛЭЭЖ БАЙНА', 'AI дүгнэлт гарсан. Шалгаад батлах эсвэл засварт буцаана уу.']
+    : ['warn', 'ҮЗЛЭГ ҮРГЭЛЖИЛЖ БАЙНА', `Дараагийн алхам: ${esc((steps.find((x) => !x.ok) || {}).t || '')}`];
+  el.innerHTML = `<div class="og-crumb"><span class="lnk" onclick="go('orgs')">Байгууллагууд</span> / <b>${esc(o.name)}</b></div>
+    <div class="og-head"><div><div class="og-eyebrow">Объектын удирдлага</div><h2>${esc(o.name)}</h2>
+      <div class="sub">${esc(o.loc || 'Байршил оруулаагүй')} · ${o.items.length} үзлэг · сүүлийн үзлэг ${esc(inspDate(o.last))}</div></div>
+      <div class="og-acts"><button onclick="openInspection('${r.id}', false);go('agent')">⚡ AI дүгнэлт</button>
+        <button class="sec" onclick="newInspectionFor('${r.id}')">+ Шинэ үзлэг</button><button class="sec" onclick="regReport('${r.id}', 'pdf')">🖨 PDF</button><button class="sec" onclick="regReport('${r.id}', 'word')">📄 Word</button></div></div>
+    <div class="og-kpis">
+      <div class="og-kpi"><div class="t">Нийт үзлэг <span>🗂</span></div><b>${o.items.length}</b><div class="s">${o.items.filter((x) => x.result).length} нь AI дүгнэлттэй</div></div>
+      <div class="og-kpi"><div class="t">Процессын түвшин <span>⇄</span></div><b style="color:#a78bfa">${doneN}/5</b><div class="s">Сонгосон үзлэгийн явц</div></div>
+      <div class="og-kpi"><div class="t">Илэрсэн зөрчил <span>⚑</span></div><b style="color:${viol ? 'var(--err)' : 'var(--ok)'}">${viol}</b><div class="s">${part} хэсэгчлэн хангасан</div></div>
+      <div class="og-kpi"><div class="t">Эрсдэлийн түвшин <span>◈</span></div><b style="color:${rk.c}">${esc(rk.t)}</b><div class="s">${sc ? `${sc.pct}% · ${esc(sc.grade)}` : 'Оноо гараагүй'}</div></div>
+    </div>
+    <div class="og-grid">
+      <div class="og-box"><h3>Объектын мэдээлэл</h3><div class="bsub">Байгууллага / цахилгаан байгууламж</div>
+        <div class="og-obj"><span class="ic">🏢</span><div><b>${esc(o.name)}</b><div class="muted" style="font-size:12.5px">${esc(d.equipment || 'Тоног төхөөрөмж оруулаагүй')}</div></div></div>
+        <dl class="og-dl"><div><dt>Байршил</dt><dd>${esc(d.location || o.loc || '—')}</dd></div><div><dt>Хүчдэл</dt><dd>${d.voltage_v ? esc(d.voltage_v) + ' В' : '—'}</dd></div>
+          <div><dt>Үзлэгийн огноо</dt><dd>${esc(inspDate(r))}</dd></div><div><dt>Үзлэг хийсэн инженер</dt><dd>${esc(d.engineer_name || '—')}</dd></div>
+          <div><dt>Хавсралт</dt><dd>${attHtml(r)}</dd></div><div><dt>Хэмжилт</dt><dd>${(d.measurements || []).filter((m) => m.name).length || '—'}</dd></div></dl>
+        <label class="muted" style="font-size:12px">Үзлэг сонгох</label>
+        <select onchange="orgPick(this.value)">${o.items.map((x) => `<option value="${x.id}"${x.id === r.id ? ' selected' : ''}>${esc(inspDate(x))} — ${esc(statusOf(x)[1])}</option>`).join('')}</select></div>
+      <div class="og-box"><h3>Ажлын процессын явц <span class="og-chip ${doneN === 5 ? 'ok' : 'c'}">${doneN === 5 ? 'Бүрэн дууссан' : 'Явагдаж байна'}</span></h3>
+        <div class="bsub">Инженер → AI агент → Шууд удирдлага</div>
+        <div class="og-steps">${steps.map((x, i) => `<div class="og-step ${x.cls}"><div class="no">0${i + 1}</div><b>${esc(x.t)}</b><div class="ss">${esc(x.st)}</div></div>`).join('')}</div>
+        <div class="og-prog"><i style="width:${doneN * 20}%"></i></div><div class="muted" style="font-size:12px">${doneN} / 5 алхам</div>
+        <div class="og-acts" style="margin-top:12px">${r.result ? `<button class="mini" onclick="orgReview('${r.id}','approved')">✓ Дүгнэлт батлах</button>
+          <button class="mini sec" onclick="orgReview('${r.id}','returned')">↩ Засварт буцаах</button>` : `<button class="mini" onclick="openInspection('${r.id}')">Үзлэгийг үргэлжлүүлэх →</button>`}
+          <button class="mini sec" onclick="orgJson('${r.id}')">⬇ JSON</button></div>
+        <div class="og-res ${resBox[0]}"><div class="k">ТӨЛӨВ</div><b>${resBox[1]}</b><div class="muted" style="font-size:12.5px">${resBox[2]}</div></div></div>
+    </div>
+    <div class="og-box"><h3>Үзлэгийн мэдээлэл ба үр дүн <span class="muted" style="font-size:12px;font-weight:400">${esc(inspDate(r))}</span></h3>
+      <div class="og-tabs">${[['sum', 'Ерөнхий үр дүн'], ['ck', `Шалгах хуудас (${ck.length})`], ['rec', `Дүгнэлт, зөвлөмж (${recs.length})`], ['hist', `Үзлэгийн түүх (${o.items.length})`]]
+        .map(([k, l]) => `<button class="${orgTab === k ? 'on' : ''}" onclick="orgTabSet('${k}')">${l}</button>`).join('')}</div>${body}</div>
+    <div class="navrow"><button class="back" onclick="go('orgs')">← Байгууллагууд</button><button class="back" onclick="go('')">Төв →</button></div>`;
+}
+// Тухайн байгууллагад шинэ үзлэг: объектын мэдээллийг хуулж эхлүүлнэ
+function newInspectionFor(id) {
+  const src = records.find((x) => x.id === id); const d = (src && src.data) || {};
+  newInspection();
+  const set = (k, v) => { if (v) $(k).value = v; };
+  set('f_name', d.object_name); set('f_loc', d.location); set('f_eq', d.equipment); set('f_v', d.voltage_v);
+  saveDraft();
 }
 function regSearch(v) { regQ = v; renderRegistry(true); }
 function regSet(tab, q) { regTab = tab; if (q !== undefined) { regQ = q; regFilter = null; } if (location.hash !== '#/registry') go('registry'); else renderRegistry(); }
