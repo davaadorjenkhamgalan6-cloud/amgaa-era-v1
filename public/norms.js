@@ -116,7 +116,33 @@ export function pick(index, queries, k = 24) {
   for (const q of queries) for (const r of search(index, q, 4)) if (!seen.has(r.id) || seen.get(r.id).score < r.score) seen.set(r.id, r);
   return [...seen.values()].sort((a, b) => b.score - a.score).slice(0, k);
 }
-export const label = (c) => `${c.code || CODE} ${/^\d/.test(c.section) ? c.section : c.section || ''}${c.part ? ` (${c.part})` : ''}`.trim();
+export const label = (c) => {
+  const code = c.code || CODE, sec = String(c.section || '');
+  return `${sec.startsWith(code + ' ') ? sec : `${code} ${sec}`}${c.part ? ` (${c.part})` : ''}`.trim();
+};
+
+// Файлын нэрээс дүрмийн товч код: ЦБД, ТЭД, эсвэл эхний үгсийн үсгээр (жишээ: "Галын аюулгүй байдлын дүрэм" → "ГАБД")
+export function guessCode(name) {
+  const n = String(name || '');
+  if (/ТЭД|техник(ийн)?\s+ашиглалт/i.test(n)) return 'ТЭД';
+  if (/ЦБД|байгууламжийн\s+дүрэм|БД-43-101/i.test(n)) return 'ЦБД';
+  const w = n.replace(/[^А-ЯЁӨҮа-яёөүA-Za-z\s]/g, ' ').split(/\s+/).filter((x) => x.length > 1);
+  return (w.slice(0, 4).map((x) => x[0]).join('').toUpperCase() || 'ДҮРЭМ');
+}
+
+// Олон дүрмийг нэг хайлтын сан болгоно. ЦБД-ээс бусад дүрмийн заалтын дугаарт кодыг нь угтвар болгож (жишээ: "ТЭД 2.1")
+// ижил дугаартай заалтуудыг ялгана. id-г дүрэм бүрээр давхардалгүй болгоно.
+export function mergeDocs(docs) {
+  const out = [];
+  for (const d of docs || []) {
+    for (const c of d.chunks || []) {
+      const code = c.code || d.code || CODE, sec = String(c.section || '');
+      const section = code !== CODE && !sec.startsWith(code + ' ') ? `${code} ${sec}` : sec;
+      out.push({ ...c, code, section, id: `${d.id || 'd'}-${c.id}` });
+    }
+  }
+  return out;
+}
 
 // ---------- Файлаас текст гаргах (зөвхөн хөтөч) ----------
 export async function extract(file, onProgress = () => {}) {
@@ -192,6 +218,11 @@ async function op(mode, fn) {
 export const saveDoc = (doc) => op('readwrite', (s) => s.put({ ...doc, id: 'active' }));
 export const loadDoc = () => op('readonly', (s) => s.get('active'));
 export const clearDoc = () => op('readwrite', (s) => s.delete('active'));
+// Олон дүрэм: дүрэм бүр өөрийн id-тай (хуучин 'active' нь эхний дүрэм хэвээр үлдэнэ)
+export const listDocs = async () => ((await op('readonly', (s) => s.getAll())) || []).filter((d) => d && d.chunks && d.chunks.length)
+  .sort((a, b) => String(a.imported || '').localeCompare(String(b.imported || '')));
+export const addDoc = (doc) => op('readwrite', (s) => s.put(doc));
+export const removeDoc = (id) => op('readwrite', (s) => s.delete(id));
 // Апп-тай хамт ирсэн дүрэм (public/norms/cbd.json) — байвал бүх хэрэглэгчид ашиглана
 export async function loadBundled() {
   try { const r = await fetch('norms/cbd.json', { cache: 'no-cache' }); if (!r.ok) return null; const j = await r.json(); return Array.isArray(j.chunks) && j.chunks.length ? j : null; } catch { return null; }

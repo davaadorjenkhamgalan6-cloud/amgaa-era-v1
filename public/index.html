@@ -1486,18 +1486,25 @@ updateStatus();
 import * as N from './norms.js';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-let rule = null, index = null, aiReady = false, busy = false;
+let rule = null, docs = [], index = null, aiReady = false, busy = false;
 const HIST = 'amgaa_chat_v1';
 let chat = []; try { chat = JSON.parse(localStorage.getItem(HIST) || '[]'); } catch {}
 const saveChat = () => { try { localStorage.setItem(HIST, JSON.stringify(chat.slice(-40))); } catch {} };
 
-function setRule(doc) {
-  rule = doc; index = doc && doc.chunks && doc.chunks.length ? N.buildIndex(doc.chunks) : null;
+// Олон дүрэм: апп-тай хамт ирсэн (bundled) + энэ хөтөч дээр оруулсан бүгдийг нэгтгэж хайна
+function setRules(list) {
+  docs = list || [];
+  const chunks = N.mergeDocs(docs);
+  rule = chunks.length ? { name: docs.map((d) => d.name).join(' + '), chunks } : null;
+  index = rule ? N.buildIndex(chunks) : null;
   renderRuleBar(); window.renderNormsNote && window.renderNormsNote();
 }
 async function init() {
-  try { const d = await N.loadDoc(); if (d && d.chunks && d.chunks.length) return setRule({ ...d, source: 'local' }); } catch {}
-  const b = await N.loadBundled(); setRule(b ? { ...b, source: 'bundled' } : null);
+  let local = [];
+  try { local = await N.listDocs(); } catch {}
+  const b = await N.loadBundled();
+  setRules([...(b ? [{ ...b, id: 'bundled', name: b.name || 'Цахилгаан байгууламжийн дүрэм', source: 'bundled' }] : []),
+    ...local.map((d) => ({ ...d, code: d.code || (d.chunks[0] && d.chunks[0].code) || N.CODE, source: 'local' }))]);
 }
 fetch('/api/chat').then((r) => r.json()).then((s) => { aiReady = Boolean(s.ready); renderRuleBar(); }).catch(() => {});
 
@@ -1505,17 +1512,18 @@ function renderRuleBar() {
   const el = $('ruleBar'); if (!el) return;
   if (!rule) {
     el.innerHTML = `<div class="drop" id="ruleDrop" style="margin-top:10px"><span class="ico">📘</span>
-      <b>Цахилгаан байгууламжийн дүрмийг оруулна уу</b><br><span class="muted">Нэг удаа оруулахад энэ хөтөч дээр хадгалагдана. Чатбот болон AI агент энэ дүрмийн заалтыг ашиглана.</span>
+      <b>Цахилгаан байгууламжийн дүрмийг оруулна уу</b><br><span class="muted">Нэг удаа оруулахад энэ хөтөч дээр хадгалагдана. Олон дүрэм (ЦБД, ТЭД, галын дүрэм…) нэмж болно — чатбот болон AI агент бүгдээс нь хайна.</span>
       <div class="actions"><label class="fbtn">📥 Дүрэм оруулах (PDF, Word, TXT)<input type="file" id="ruleFile" accept=".pdf,.docx,.txt,.md,.json"></label></div>
       <span class="muted">Скан хийсэн (зураг) PDF уншигдахгүй — текст хэлбэрийн PDF эсвэл Word файл хэрэгтэй.</span></div>`;
   } else {
-    const secs = new Set(rule.chunks.map((c) => c.section)).size;
-    el.innerHTML = `<div class="rulebar"><span>📘</span><span class="nm">Оруулсан дүрэм: <b>${esc(rule.name || 'Цахилгаан байгууламжийн дүрэм')}</b><br>
-      <span class="muted">${rule.chunks.length} хэсэг · ${secs} заалт${rule.pages ? ` · ${rule.pages} хуудас` : ''}${rule.imported ? ` · ${esc(rule.imported.slice(0, 10))}` : ''}${rule.source === 'bundled' ? ' · апп-тай хамт ирсэн' : ' · энэ хөтөч дээр'}</span></span>
-      <span class="muted">${aiReady ? '🟢 AI хариулт идэвхтэй' : '🟡 AI түлхүүргүй — заалтыг шууд харуулна'}</span>
-      <label class="fbtn sec" style="padding:7px 12px;font-size:13px">Дүрэм солих<input type="file" id="ruleFile" accept=".pdf,.docx,.txt,.md,.json"></label>
-      <button class="mini sec" type="button" onclick="ruleExport()" title="Хайлтын санг JSON-оор татах (апп-д суулгах)">⬇ JSON</button>
-      ${rule.source === 'local' ? '<button class="mini del" type="button" onclick="ruleRemove(this)">Устгах</button>' : ''}</div>`;
+    el.innerHTML = docs.map((d) => {
+      const secs = new Set(d.chunks.map((c) => c.section)).size, code = d.code || (d.chunks[0] && d.chunks[0].code) || N.CODE;
+      return `<div class="rulebar" style="margin-bottom:6px"><span>📘</span><span class="nm"><b>${esc(code)}</b> · ${esc(d.name || 'Дүрэм')}<br>
+      <span class="muted">${d.chunks.length} хэсэг · ${secs} заалт${d.pages ? ` · ${d.pages} хуудас` : ''}${d.imported ? ` · ${esc(String(d.imported).slice(0, 10))}` : ''}${d.source === 'bundled' ? ' · апп-тай хамт ирсэн' : ' · энэ хөтөч дээр'}</span></span>
+      ${d.source === 'local' ? `<button class="mini del" type="button" onclick="ruleRemove(this, '${esc(d.id)}')">Устгах</button>` : ''}</div>`;
+    }).join('') + `<div class="rulebar"><span class="muted">${docs.length} дүрэм · ${rule.chunks.length} хэсэг · ${aiReady ? '🟢 AI хариулт идэвхтэй' : '🟡 AI түлхүүргүй — заалтыг шууд харуулна'}</span>
+      <label class="fbtn sec" style="padding:7px 12px;font-size:13px">➕ Дүрэм нэмэх<input type="file" id="ruleFile" accept=".pdf,.docx,.txt,.md,.json"></label>
+      <button class="mini sec" type="button" onclick="ruleExport()" title="Бүх дүрмийн хайлтын санг JSON-оор татах (апп-д суулгах)">⬇ JSON</button></div>`;
   }
   const f = $('ruleFile'); if (f) f.onchange = (e) => { if (e.target.files[0]) importRule(e.target.files[0]); e.target.value = ''; };
   const d = $('ruleDrop');
@@ -1534,19 +1542,25 @@ async function importRule(file) {
     const chunks = got.chunks || N.chunkText(got);
     if (chunks.length < 3) throw new Error('Файлаас хангалттай текст олдсонгүй.');
     const numbered = chunks.filter((c) => /^\d/.test(c.section)).length;
-    const doc = { name: file.name.replace(/\.[^.]+$/, ''), imported: new Date().toISOString(), pages: Array.isArray(got) ? got.length : null, chunks };
-    await N.saveDoc(doc);
-    setRule({ ...doc, source: 'local' });
-    msg.innerHTML = `<div class="msg ok">Дүрэм орлоо: ${chunks.length} хэсэг${numbered ? `, ${numbered} нь заалтын дугаартай (жишээ: ${esc(chunks.find((c) => /^\d/.test(c.section)).section)})` : ''}.${numbered < chunks.length * 0.3 ? ' <br>⚠ Заалтын дугаар цөөн танигдлаа — ишлэл хуудасны дугаараар гарна.' : ''}</div>`;
+    const name = file.name.replace(/\.[^.]+$/, '');
+    // JSON (⬇ JSON-оор татсан) файл бол заалтууд өөрийн кодтой ирнэ; бусад үед файлын нэрээс код таана
+    const code = got.chunks && got.chunks[0] && got.chunks[0].code ? got.chunks[0].code : N.guessCode(name);
+    const doc = { id: 'd' + Date.now().toString(36), name, code, imported: new Date().toISOString(), pages: Array.isArray(got) ? got.length : null,
+      chunks: got.chunks ? chunks : chunks.map((c) => ({ ...c, code })) };
+    // Ижил нэртэй дүрмийг дахин оруулбал хуучныг нь солино
+    for (const d of docs) if (d.source === 'local' && d.name === name) await N.removeDoc(d.id);
+    await N.addDoc(doc);
+    await init();
+    msg.innerHTML = `<div class="msg ok">Дүрэм нэмэгдлээ (${esc(code)}): ${chunks.length} хэсэг${numbered ? `, ${numbered} нь заалтын дугаартай (жишээ: ${esc(chunks.find((c) => /^\d/.test(c.section)).section)})` : ''}.${numbered < chunks.length * 0.3 ? ' <br>⚠ Заалтын дугаар цөөн танигдлаа — ишлэл хуудасны дугаараар гарна.' : ''}</div>`;
   } catch (e) { msg.innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
 }
-window.ruleRemove = async (btn) => {
+window.ruleRemove = async (btn, id) => {
   if (!btn.classList.contains('sure')) { btn.classList.add('sure'); btn.textContent = 'Тийм, устгах'; setTimeout(() => { btn.classList.remove('sure'); btn.textContent = 'Устгах'; }, 3500); return; }
-  await N.clearDoc(); $('ruleMsg').innerHTML = ''; await init();
+  await N.removeDoc(id); $('ruleMsg').innerHTML = ''; await init();
 };
 window.ruleExport = () => {
   if (!rule) return;
-  const blob = new Blob([JSON.stringify({ name: rule.name, imported: rule.imported, pages: rule.pages, chunks: rule.chunks })], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ name: rule.name, imported: new Date().toISOString(), chunks: rule.chunks })], { type: 'application/json' });
   window.EraFiles.download(blob, 'cbd.json');
 };
 

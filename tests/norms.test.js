@@ -68,3 +68,20 @@ test('агент: хөтчөөс ирсэн ЦБД заалтаар хайна (
   assert.equal(hits[0].section, '1.1.2'); assert.equal(hits[0].code, 'ЦБД');
   assert.equal(normsFrom([]), null);
 });
+
+test('олон дүрэм: mergeDocs кодоор ялгаж, id давхардуулахгүй; guessCode, label', async () => {
+  const { mergeDocs, guessCode, label } = await import('../public/norms.js');
+  assert.equal(guessCode('1БД-43-101-03-Цахилгаан-байгууламжийн-дүрэм'), 'ЦБД');
+  assert.equal(guessCode('Хэрэглэгчийн цахилгаан тоноглолын техник ашиглалтын дүрэм'), 'ТЭД');
+  assert.equal(guessCode('Галын аюулгүй байдлын дүрэм'), 'ГАБД');
+  const m = mergeDocs([
+    { id: 'a', chunks: [{ id: 'c0', code: 'ЦБД', section: '1.1', content: 'x' }] },
+    { id: 'b', code: 'ТЭД', chunks: [{ id: 'c0', code: 'ТЭД', section: '1.1', content: 'y' }] },
+  ]);
+  assert.deepEqual(m.map((c) => c.id), ['a-c0', 'b-c0']);
+  assert.deepEqual(m.map((c) => c.section), ['1.1', 'ТЭД 1.1']);
+  assert.equal(label(m[0]), 'ЦБД 1.1');
+  assert.equal(label(m[1]), 'ТЭД 1.1');
+  // дахин нэгтгэхэд (JSON-оор суулгасан) угтвар давхардахгүй
+  assert.equal(mergeDocs([{ id: 'z', chunks: m }])[1].section, 'ТЭД 1.1');
+});
