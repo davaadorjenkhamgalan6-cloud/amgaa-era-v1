@@ -406,7 +406,7 @@
     <button class="regbtn" type="button" onclick="go('registry')" title="Үзлэгийн бүртгэл"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/></svg> <span class="lbl2">Үзлэгийн бүртгэл</span> <span class="cnt" id="regCnt">0</span></button>
     <button class="regbtn" type="button" onclick="go('plans')" title="Үзлэгийн төлөвлөгөө">📅 <span class="lbl2">Төлөвлөгөө</span> <span class="cnt" id="planCnt">0</span></button>
     <button class="regbtn" type="button" onclick="go('orgs')" title="Үзлэг хийсэн байгууллагууд">🏢 <span class="lbl2">Байгууллагууд</span> <span class="cnt" id="orgCnt">0</span></button>
-    <button class="regbtn" type="button" onclick="go('chat')" title="Цахилгаан байгууламжийн дүрмийн чатбот">💬 <span class="lbl2">ЦБД чатбот</span></button>
+    <button class="regbtn" type="button" onclick="go('chat')" title="Цахилгааны хууль, дүрмийн чатбот">💬 <span class="lbl2">Хууль, дүрэм</span></button>
     <span class="status"><span class="dot" id="dot"></span><span id="statusTxt">Шалгаж байна…</span></span>
   </div>
 </div></header>
@@ -423,7 +423,7 @@
       <div class="chips" id="chipsOut"></div>
     </div>
     <p class="tag">Тойрог бүр дээр дарж тухайн хэсэг рүү орно. Зүүн тал — инженерийн оруулах мэдээлэл, баруун тал — AI агентын гаргах үр дүн.</p>
-    <div class="curbar">Одоогийн үзлэг: <b id="curName">—</b> · <span class="lnk" onclick="go('registry')">Бүртгэл</span> · <span class="lnk" onclick="go('orgs')">Байгууллагууд</span> · <span class="lnk" onclick="go('chat')">ЦБД чатбот</span> · <span class="lnk" onclick="newInspection()">+ Шинэ үзлэг</span></div>
+    <div class="curbar">Одоогийн үзлэг: <b id="curName">—</b> · <span class="lnk" onclick="go('registry')">Бүртгэл</span> · <span class="lnk" onclick="go('orgs')">Байгууллагууд</span> · <span class="lnk" onclick="go('chat')">Хууль, дүрмийн чатбот</span> · <span class="lnk" onclick="newInspection()">+ Шинэ үзлэг</span></div>
     <div class="progress" id="progress"></div>
     <button class="big" type="button" onclick="go('object')">Үзлэг эхлүүлэх →</button>
   </div>
@@ -544,7 +544,7 @@
 
   <!-- ============ ЦБД ЧАТБОТ ============ -->
   <section class="view card no-print" data-view="chat" id="v-chat">
-    <h2><span class="n">💬</span>ЦБД чатбот <span class="muted" style="font-weight:400;margin-left:6px">— зөвхөн Цахилгаан байгууламжийн дүрмээс хариулна</span></h2>
+    <h2><span class="n">💬</span>Хууль, дүрмийн чатбот <span class="muted" style="font-weight:400;margin-left:6px">— зөвхөн оруулсан цахилгааны хууль, дүрмээс хариулна</span></h2>
     <div id="ruleBar"></div>
     <div id="ruleMsg"></div>
     <div class="chatlog" id="chatLog"></div>
@@ -601,7 +601,7 @@ const STATUSES = [['not_checked','Шалгаагүй'],['ok','Хэвийн'],['p
 const POINTS = { ok: 10, partial: 5, violation: 0 };
 const VIEWS = {
   '': 'Төв', object: 'Объектын мэдээлэл', checklist: 'Шалгах хуудас', scores: '15 үзүүлэлт', measure: 'Хэмжилт',
-  files: 'Зураг, PDF хавсралт', agent: 'AI агент', registry: 'Үзлэгийн бүртгэл', orgs: 'Үзлэг хийсэн байгууллагууд', org: 'Байгууллага', plans: 'Үзлэгийн төлөвлөгөө', chat: 'ЦБД чатбот', result: 'Оноо, зэрэглэл', norms: 'Цахилгаан байгууламжийн дүрэм', recs: 'Зөвлөмж, хугацаа', conclusion: 'Дүгнэлтийн ноорог', review: 'Шууд удирдлага',
+  files: 'Зураг, PDF хавсралт', agent: 'AI агент', registry: 'Үзлэгийн бүртгэл', orgs: 'Үзлэг хийсэн байгууллагууд', org: 'Байгууллага', plans: 'Үзлэгийн төлөвлөгөө', chat: 'Хууль, дүрмийн чатбот', result: 'Оноо, зэрэглэл', norms: 'Цахилгаан байгууламжийн дүрэм', recs: 'Зөвлөмж, хугацаа', conclusion: 'Дүгнэлтийн ноорог', review: 'Шууд удирдлага',
 };
 
 const $ = (id) => document.getElementById(id);
@@ -1956,8 +1956,8 @@ function setRules(list) {
 async function init() {
   let local = [];
   try { local = await N.listDocs(); } catch {}
-  const b = await N.loadBundled();
-  setRules([...(b ? [{ ...b, id: 'bundled', name: b.name || 'Цахилгаан байгууламжийн дүрэм', source: 'bundled' }] : []),
+  const b = await N.loadBundledAll();
+  setRules([...b.map((x) => ({ ...x, name: x.name || 'Цахилгаан байгууламжийн дүрэм', source: 'bundled' })),
     ...local.map((d) => ({ ...d, code: d.code || (d.chunks[0] && d.chunks[0].code) || N.CODE, source: 'local' }))]);
 }
 fetch('/api/chat').then((r) => r.json()).then((s) => { aiReady = Boolean(s.ready); renderRuleBar(); }).catch(() => {});
@@ -2064,7 +2064,7 @@ async function ask() {
   if (hits.length && prevQ && N.terms(q).length < 4) { const more = N.search(index, prevQ.text + ' ' + q, 6); if (more[0] && more[0].score > hits[0].score) hits = more; }
   const ex = hits.map(({ score, matched, ...c }) => c);
   let out;
-  if (!ex.length) out = { role: 'bot', ai: true, grounded: true, text: 'Цахилгаан байгууламжийн дүрэмд энэ асуултад хариулах заалт олдсонгүй. Асуултаа өөр үгээр (тоног төхөөрөмж, ажлын нэрээр) асууна уу.', ex: [] };
+  if (!ex.length) out = { role: 'bot', ai: true, grounded: true, text: 'Оруулсан хууль, дүрэмд энэ асуултад хариулах заалт олдсонгүй. Асуултаа өөр үгээр (тоног төхөөрөмж, ажлын нэрээр) асууна уу.', ex: [] };
   else if (!aiReady) out = { role: 'bot', ai: false, ex };
   else {
     try {

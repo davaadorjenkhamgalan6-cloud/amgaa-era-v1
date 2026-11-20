@@ -226,6 +226,18 @@ export const listDocs = async () => ((await op('readonly', (s) => s.getAll())) |
 export const addDoc = (doc) => op('readwrite', (s) => s.put(doc));
 export const removeDoc = (id) => op('readwrite', (s) => s.delete(id));
 // Апп-тай хамт ирсэн дүрэм (public/norms/cbd.json) — байвал бүх хэрэглэгчид ашиглана
+// public/norms/index.json = { docs: [{ file: 'cbd.json', name, code }] } — олон хууль, дүрэм; байхгүй бол хуучин cbd.json
+export async function loadBundledAll() {
+  const get = async (f) => { try { const r = await fetch('norms/' + f, { cache: 'no-cache' }); return r.ok ? await r.json() : null; } catch { return null; } };
+  const ix = await get('index.json');
+  const list = ix && Array.isArray(ix.docs) ? ix.docs : [{ file: 'cbd.json' }];
+  const out = [];
+  for (const d of list) {
+    const j = await get(d.file);
+    if (j && Array.isArray(j.chunks) && j.chunks.length) out.push({ ...j, name: d.name || j.name, code: d.code || j.code || (j.chunks[0] && j.chunks[0].code) || CODE, id: 'b-' + d.file.replace(/\.json$/, '') });
+  }
+  return out;
+}
 export async function loadBundled() {
-  try { const r = await fetch('norms/cbd.json', { cache: 'no-cache' }); if (!r.ok) return null; const j = await r.json(); return Array.isArray(j.chunks) && j.chunks.length ? j : null; } catch { return null; }
+  const all = await loadBundledAll(); return all[0] || null;
 }

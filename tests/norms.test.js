@@ -52,7 +52,7 @@ test('чатбот: заалт олдоогүй бол AI дуудахгүй; Cl
   const r = await normsChat({ question: 'Газардуулга хэд вэ?', excerpts: [{ section: '2.1.5', page: 12, content: 'Газардуулгын эсэргүүцэл 4 Ом-оос ихгүй байна.' }], provider: 'anthropic', env: { ANTHROPIC_API_KEY: 'k' }, fetchFn });
   assert.equal(r.grounded, true); assert.deepEqual(r.cited, ['2.1.5']);
   assert.equal(body.temperature, 0);
-  assert.match(body.system, /Зөвхөн хэрэглэгчийн мессежид өгөгдсөн ЦБД-ийн ишлэлүүдэд/);
+  assert.match(body.system, /Зөвхөн хэрэглэгчийн мессежид өгөгдсөн хууль, дүрмийн ишлэлүүдэд/);
   assert.match(body.messages.at(-1).content, /\[§2\.1\.5 \| х\.12\]/);
 });
 
