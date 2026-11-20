@@ -155,7 +155,7 @@
   @page :first { margin:0; @top-right { content:none; } }
   * { box-sizing:border-box; }
   body { font-family:'Times New Roman', Times, serif; font-size:11.5pt; line-height:1.45; color:#111; margin:0; }
-  .cover { width:210mm; height:297mm; position:relative; background:url('${base}${ORG.cover}') center/cover no-repeat; break-after:page; -webkit-print-color-adjust:exact; print-color-adjust:exact; z-index:2; background-color:#fff; }
+  .cover { width:210mm; height:297mm; position:relative; background:url('${/^data:/.test(ORG.cover) ? '' : base}${ORG.cover}') center/cover no-repeat; break-after:page; -webkit-print-color-adjust:exact; print-color-adjust:exact; z-index:2; background-color:#fff; }
   .cover .t { position:absolute; left:15.5%; top:21%; right:32%; color:#1d2f6f; font-size:25pt; line-height:1.25; }
   .cover .l { position:absolute; left:15.5%; top:33%; color:#1d2f6f; font-size:12pt; }
   .cover .n { position:absolute; left:15.5%; top:36.5%; right:40%; color:#1d2f6f; font-size:20pt; }
