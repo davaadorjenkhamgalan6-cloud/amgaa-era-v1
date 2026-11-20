@@ -1391,7 +1391,7 @@ fetch('/api/agent').then((r) => r.json()).then((s) => {
     $('setupMsg').classList.remove('hidden');
   }
   if (s.needs_code) { $('codeBox').classList.remove('hidden'); $('f_code').value = store.get('amgaa_code') || ''; }
-}).catch(() => { $('statusTxt').textContent = 'Сервер холбогдсонгүй'; });
+}).catch(() => { $('statusTxt').textContent = location.protocol === 'file:' ? 'Локал файл — AI зөвхөн Vercel дээр' : 'Сервер холбогдсонгүй'; });
 
 // ================= Агент ажиллуулах =================
 const WAIT = ['Оноо тооцоолж байна…','Цахилгаан байгууламжийн дүрмээс хайж байна…','Зөрчлүүдийг шинжилж байна…','Дүгнэлт бичиж байна…','Кодын шалгалтаар шалгаж байна…','Claude шалгаж, найруулж байна…'];
@@ -1572,7 +1572,7 @@ async function wordBlob() {
   if (!reportModel(null)) return null;           // дутуу мэдээллийг эрт мэдэгдэнэ
   const m = reportModel(await attachments('docx'));
   if (!window.docx) await loadScript('vendor/docx.umd.js');
-  const cover = await fetch('report/cover.jpg').then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
+  const cover = await fetch(EraReport.ORG.cover).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
   return { blob: await docx.Packer.toBlob(EraReport.toDocx(m, docx, cover ? new Uint8Array(cover) : null)), name: EraReport.fileName(m, 'docx'), m };
 }
 async function reportWord() {

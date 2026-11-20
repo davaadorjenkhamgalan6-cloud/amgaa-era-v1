@@ -154,9 +154,11 @@ export async function extract(file, onProgress = () => {}) {
   throw new Error('PDF, Word (.docx) эсвэл текст (.txt) файл оруулна уу. Хуучин .doc бол Word-оор нээж .docx болгож хадгална.');
 }
 async function extractPdf(file, onProgress) {
-  const base = new URL('vendor/pdfjs/', document.baseURI).href;
-  const pdfjs = await import(base + 'pdf.min.mjs');
-  pdfjs.GlobalWorkerOptions.workerSrc = base + 'pdf.worker.min.mjs';
+  // Нэг файлтай хувилбарт (dist/amgaa-era.html) pdf.js нь хуудсан дотроо — blob URL-ээр ачаална
+  const u = (typeof globalThis.__pdfjsUrls === 'function' && globalThis.__pdfjsUrls()) ||
+    { main: new URL('vendor/pdfjs/pdf.min.mjs', document.baseURI).href, worker: new URL('vendor/pdfjs/pdf.worker.min.mjs', document.baseURI).href };
+  const pdfjs = await import(u.main);
+  pdfjs.GlobalWorkerOptions.workerSrc = u.worker;
   const doc = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   const pages = [];
   for (let p = 1; p <= doc.numPages; p++) {
