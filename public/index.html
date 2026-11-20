@@ -253,7 +253,17 @@
   .og-obj { display:flex; gap:12px; align-items:center; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px; background:rgba(79,140,255,.05); }
   .og-obj .ic { width:42px; height:42px; border-radius:10px; display:grid; place-items:center; background:linear-gradient(135deg,#2563eb,#7c3aed); font-size:20px; flex:none; }
   .og-dl { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; margin:0 0 12px; } .og-dl dt { font-size:11.5px; color:var(--muted); } .og-dl dd { margin:0; font-weight:700; font-size:13.5px; word-break:break-word; }
-  .og-steps { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; }
+  .og-steps { display:grid; grid-template-columns:repeat(6,1fr); gap:6px; }
+  /* ---- Үзлэгийн төлөвлөгөө ---- */
+  .st.plan { color:var(--cyan); border-color:rgba(56,189,248,.5); } .st.late { color:var(--err); border-color:rgba(248,113,113,.5); }
+  .pl-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin:10px 0; }
+  .pl-grid label { font-size:12px; color:var(--muted); margin:0; display:grid; gap:4px; }
+  .pl-why { font-size:12.5px; color:#c7d2fe; border-left:3px solid var(--violet); padding:6px 10px; background:rgba(139,92,246,.08); margin:8px 0; }
+  .pl-cols { display:grid; grid-template-columns:1.3fr 1fr; gap:12px; } @media (max-width:860px) { .pl-cols { grid-template-columns:1fr; } }
+  .pl-list { list-style:none; margin:6px 0; padding:0; display:grid; gap:5px; }
+  .pl-list li { display:flex; gap:8px; align-items:flex-start; font-size:13px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; }
+  .pl-list li .src { font-size:11px; color:var(--muted); white-space:nowrap; margin-left:auto; } .pl-list li button { padding:0 7px; font-size:12px; }
+  .pl-list input[type=checkbox] { width:auto; margin-top:2px; } .pl-add { display:flex; gap:6px; } .pl-add input { flex:1; padding:6px 9px; font-size:13px; }
   .og-step { border:1px solid var(--line); border-radius:10px; padding:10px 6px; text-align:center; font-size:12.5px; line-height:1.35; position:relative; }
   .og-step .no { font-size:11px; color:var(--muted); } .og-step b { display:block; margin:3px 0; } .og-step .ss { font-size:11.5px; color:var(--muted); }
   .og-step.done { border-color:rgba(52,211,153,.55); background:rgba(52,211,153,.08); } .og-step.done .ss { color:var(--ok); }
@@ -394,6 +404,7 @@
   </div>
   <div class="hdr-right">
     <button class="regbtn" type="button" onclick="go('registry')" title="Үзлэгийн бүртгэл"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/></svg> <span class="lbl2">Үзлэгийн бүртгэл</span> <span class="cnt" id="regCnt">0</span></button>
+    <button class="regbtn" type="button" onclick="go('plans')" title="Үзлэгийн төлөвлөгөө">📅 <span class="lbl2">Төлөвлөгөө</span> <span class="cnt" id="planCnt">0</span></button>
     <button class="regbtn" type="button" onclick="go('orgs')" title="Үзлэг хийсэн байгууллагууд">🏢 <span class="lbl2">Байгууллагууд</span> <span class="cnt" id="orgCnt">0</span></button>
     <button class="regbtn" type="button" onclick="go('chat')" title="Цахилгаан байгууламжийн дүрмийн чатбот">💬 <span class="lbl2">ЦБД чатбот</span></button>
     <span class="status"><span class="dot" id="dot"></span><span id="statusTxt">Шалгаж байна…</span></span>
@@ -529,6 +540,7 @@
   <section class="view card no-print" data-view="registry" id="v-registry"></section>
   <section class="view card no-print" data-view="orgs" id="v-orgs"></section>
   <section class="view card no-print" data-view="org" id="v-org"></section>
+  <section class="view card no-print" data-view="plans" id="v-plans"></section>
 
   <!-- ============ ЦБД ЧАТБОТ ============ -->
   <section class="view card no-print" data-view="chat" id="v-chat">
@@ -589,7 +601,7 @@ const STATUSES = [['not_checked','Шалгаагүй'],['ok','Хэвийн'],['p
 const POINTS = { ok: 10, partial: 5, violation: 0 };
 const VIEWS = {
   '': 'Төв', object: 'Объектын мэдээлэл', checklist: 'Шалгах хуудас', scores: '15 үзүүлэлт', measure: 'Хэмжилт',
-  files: 'Зураг, PDF хавсралт', agent: 'AI агент', registry: 'Үзлэгийн бүртгэл', orgs: 'Үзлэг хийсэн байгууллагууд', org: 'Байгууллага', chat: 'ЦБД чатбот', result: 'Оноо, зэрэглэл', norms: 'Цахилгаан байгууламжийн дүрэм', recs: 'Зөвлөмж, хугацаа', conclusion: 'Дүгнэлтийн ноорог', review: 'Шууд удирдлага',
+  files: 'Зураг, PDF хавсралт', agent: 'AI агент', registry: 'Үзлэгийн бүртгэл', orgs: 'Үзлэг хийсэн байгууллагууд', org: 'Байгууллага', plans: 'Үзлэгийн төлөвлөгөө', chat: 'ЦБД чатбот', result: 'Оноо, зэрэглэл', norms: 'Цахилгаан байгууламжийн дүрэм', recs: 'Зөвлөмж, хугацаа', conclusion: 'Дүгнэлтийн ноорог', review: 'Шууд удирдлага',
 };
 
 const $ = (id) => document.getElementById(id);
@@ -712,6 +724,7 @@ function route() {
   if (name === 'files') renderFiles();
   if (name === 'orgs') renderOrgs();
   if (name === 'org') renderOrg();
+  if (name === 'plans') renderPlans();
   if (name === 'agent') renderNormsNote();
   if (name === 'chat' && window.renderChat) window.renderChat();
   scrollTo(0, 0);
@@ -888,6 +901,7 @@ function updateStatus() {
   $('curName').textContent = $('f_name').value.trim() || '(нэргүй үзлэг)';
   $('regCnt').textContent = records.length;
   $('orgCnt').textContent = orgList().filter((o) => o.name !== '(нэргүй үзлэг)').length;
+  $('planCnt').textContent = records.filter((r) => r.plan && !sectionDone(r.data || {}).checklist).length;
   if ($('regNodeCnt')) $('regNodeCnt').textContent = records.length;
   return n;
 }
@@ -1009,6 +1023,8 @@ function deleteInspection(id, btn) {
 function statusOf(r) {
   if (r.result) return ['done', 'Дүгнэлт гарсан'];
   const dn = sectionDone(r.data || {});
+  if (r.plan && r.plan.status === 'scheduled' && !dn.checklist) return r.plan.date < todayStr() ? ['late', `Хоцорсон (${r.plan.date})`] : ['plan', `Товлогдсон ${r.plan.date}`];
+  if (r.plan && r.plan.status === 'draft' && !dn.checklist) return ['req', 'Төлөвлөгөө ноорог'];
   if (r.request && !dn.checklist && !dn.scores) return ['req', 'Хүсэлтээр ирсэн'];
   return Object.values(dn).every(Boolean) ? ['filled', 'Бөглөсөн'] : ['', 'Бөглөж байна'];
 }
@@ -1103,7 +1119,7 @@ let orgSel = '', orgInsp = '', orgTab = 'sum';
 const CK_LABEL = { ok: 'Хэвийн', partial: 'Хэсэгчлэн', violation: 'Зөрчилтэй', na: 'Хамааралгүй', clarify: 'Тодруулах', not_checked: 'Шалгаагүй' };
 const CK_CLS = { ok: 'ok', partial: 'w', violation: 'e', clarify: 'c', na: '', not_checked: '' };
 const PR_CLS = { 'Яаралтай': 'u', 'Өндөр': 'h', 'Дунд': 'm', 'Бага': 'l' };
-function openOrg(key) { orgInsp = ''; orgTab = 'sum'; location.hash = '#/org/' + key; }
+function openOrg(key, insp, tab) { orgInsp = insp || ''; orgTab = tab || 'sum'; location.hash = '#/org/' + key; if (location.hash === '#/org/' + key) renderOrg(); }
 function orgTabSet(t) { orgTab = t; renderOrg(); }
 function orgPick(id) { orgInsp = id; renderOrg(); }
 // Эрсдэлийн түвшин: оноо өндөр = эрсдэл бага
@@ -1114,14 +1130,15 @@ function riskOf(sc) {
 function orgSteps(r) {
   const d = r.data || {}, dn = sectionDone(d), rv = r.review || {};
   const raw = [
-    ['Объектын мэдээлэл', dn.object], ['Талбайн үзлэг', dn.checklist], ['Үнэлгээ, хэмжилт', dn.scores && dn.measure],
-    ['AI дүгнэлт', Boolean(r.result)], ['Хянаж батлах', rv.status === 'approved'],
+    ['Объектын мэдээлэл', dn.object], ['Үзлэгийн төлөвлөгөө', (r.plan && r.plan.status === 'scheduled') || dn.checklist], ['Талбайн үзлэг', dn.checklist],
+    ['Үнэлгээ, хэмжилт', dn.scores && dn.measure], ['AI дүгнэлт', Boolean(r.result)], ['Хянаж батлах', rv.status === 'approved'],
   ];
   let nowSet = false;
   return raw.map(([t, ok], i) => {
     let cls = ok ? 'done' : '', st = ok ? 'Дууссан' : 'Хүлээгдэж байна';
-    if (i === 4 && rv.status === 'returned') { cls = 'ret'; st = 'Засварт буцсан'; }
+    if (i === 5 && rv.status === 'returned') { cls = 'ret'; st = 'Засварт буцсан'; }
     else if (!ok && !nowSet) { cls = 'now'; st = 'Хийгдэж байна'; nowSet = true; }
+    if (i === 1 && !ok) st = r.plan ? 'AI ноорог — батлах' : 'Төлөвлөөгүй';
     return { t, cls, st, ok };
   });
 }
@@ -1152,7 +1169,8 @@ function renderOrg() {
   const recs = c ? c.recommendations || [] : [];
   // --- Таб: агуулга ---
   let body = '';
-  if (orgTab === 'sum') {
+  if (orgTab === 'plan') body = planHtml(r);
+  else if (orgTab === 'sum') {
     body = `<div class="og-chips"><span class="og-chip ok">✓ Хэвийн ${cnt('ok')}</span><span class="og-chip e">⚠ Зөрчилтэй ${viol}</span><span class="og-chip w">◐ Хэсэгчлэн ${part}</span>${cnt('clarify') ? `<span class="og-chip c">? Тодруулах ${cnt('clarify')}</span>` : ''}${cnt('na') ? `<span class="og-chip">Хамааралгүй ${cnt('na')}</span>` : ''}</div>
       <div class="og-two"><div class="og-box"><h3>Үзлэгийн нэгтгэсэн мэдээлэл</h3>
         <p style="margin:8px 0"><b>Объект:</b> ${esc(d.object_name || '—')}${d.equipment ? ' · ' + esc(d.equipment) : ''}${d.voltage_v ? ' · ' + esc(d.voltage_v) + ' В' : ''}</p>
@@ -1194,7 +1212,7 @@ function renderOrg() {
         <button class="sec" onclick="newInspectionFor('${r.id}')">+ Шинэ үзлэг</button><button class="sec" onclick="regReport('${r.id}', 'pdf')">🖨 PDF</button><button class="sec" onclick="regReport('${r.id}', 'word')">📄 Word</button></div></div>
     <div class="og-kpis">
       <div class="og-kpi"><div class="t">Нийт үзлэг <span>🗂</span></div><b>${o.items.length}</b><div class="s">${o.items.filter((x) => x.result).length} нь AI дүгнэлттэй</div></div>
-      <div class="og-kpi"><div class="t">Процессын түвшин <span>⇄</span></div><b style="color:#a78bfa">${doneN}/5</b><div class="s">Сонгосон үзлэгийн явц</div></div>
+      <div class="og-kpi"><div class="t">Процессын түвшин <span>⇄</span></div><b style="color:#a78bfa">${doneN}/6</b><div class="s">Сонгосон үзлэгийн явц</div></div>
       <div class="og-kpi"><div class="t">Илэрсэн зөрчил <span>⚑</span></div><b style="color:${viol ? 'var(--err)' : 'var(--ok)'}">${viol}</b><div class="s">${part} хэсэгчлэн хангасан</div></div>
       <div class="og-kpi"><div class="t">Эрсдэлийн түвшин <span>◈</span></div><b style="color:${rk.c}">${esc(rk.t)}</b><div class="s">${sc ? `${sc.pct}% · ${esc(sc.grade)}` : 'Оноо гараагүй'}</div></div>
     </div>
@@ -1206,17 +1224,17 @@ function renderOrg() {
           <div><dt>Хавсралт</dt><dd>${attHtml(r)}</dd></div><div><dt>Хэмжилт</dt><dd>${(d.measurements || []).filter((m) => m.name).length || '—'}</dd></div></dl>
         <label class="muted" style="font-size:12px">Үзлэг сонгох</label>
         <select onchange="orgPick(this.value)">${o.items.map((x) => `<option value="${x.id}"${x.id === r.id ? ' selected' : ''}>${esc(inspDate(x))} — ${esc(statusOf(x)[1])}</option>`).join('')}</select></div>
-      <div class="og-box"><h3>Ажлын процессын явц <span class="og-chip ${doneN === 5 ? 'ok' : 'c'}">${doneN === 5 ? 'Бүрэн дууссан' : 'Явагдаж байна'}</span></h3>
-        <div class="bsub">Инженер → AI агент → Шууд удирдлага</div>
+      <div class="og-box"><h3>Ажлын процессын явц <span class="og-chip ${doneN === 6 ? 'ok' : 'c'}">${doneN === 6 ? 'Бүрэн дууссан' : 'Явагдаж байна'}</span></h3>
+        <div class="bsub">AI төлөвлөнө → Инженер → AI дүгнэлт → Шууд удирдлага</div>
         <div class="og-steps">${steps.map((x, i) => `<div class="og-step ${x.cls}"><div class="no">0${i + 1}</div><b>${esc(x.t)}</b><div class="ss">${esc(x.st)}</div></div>`).join('')}</div>
-        <div class="og-prog"><i style="width:${doneN * 20}%"></i></div><div class="muted" style="font-size:12px">${doneN} / 5 алхам</div>
+        <div class="og-prog"><i style="width:${Math.round(doneN / 6 * 100)}%"></i></div><div class="muted" style="font-size:12px">${doneN} / 6 алхам</div>
         <div class="og-acts" style="margin-top:12px">${r.result ? `<button class="mini" onclick="orgReview('${r.id}','approved')">✓ Дүгнэлт батлах</button>
           <button class="mini sec" onclick="orgReview('${r.id}','returned')">↩ Засварт буцаах</button>` : `<button class="mini" onclick="openInspection('${r.id}')">Үзлэгийг үргэлжлүүлэх →</button>`}
           <button class="mini sec" onclick="orgJson('${r.id}')">⬇ JSON</button></div>
         <div class="og-res ${resBox[0]}"><div class="k">ТӨЛӨВ</div><b>${resBox[1]}</b><div class="muted" style="font-size:12.5px">${resBox[2]}</div></div></div>
     </div>
     <div class="og-box"><h3>Үзлэгийн мэдээлэл ба үр дүн <span class="muted" style="font-size:12px;font-weight:400">${esc(inspDate(r))}</span></h3>
-      <div class="og-tabs">${[['sum', 'Ерөнхий үр дүн'], ['ck', `Шалгах хуудас (${ck.length})`], ['rec', `Дүгнэлт, зөвлөмж (${recs.length})`], ['hist', `Үзлэгийн түүх (${o.items.length})`]]
+      <div class="og-tabs">${[['plan', `📅 Төлөвлөгөө${r.plan ? (r.plan.status === 'scheduled' ? ' ✓' : ' (ноорог)') : ''}`], ['sum', 'Ерөнхий үр дүн'], ['ck', `Шалгах хуудас (${ck.length})`], ['rec', `Дүгнэлт, зөвлөмж (${recs.length})`], ['hist', `Үзлэгийн түүх (${o.items.length})`]]
         .map(([k, l]) => `<button class="${orgTab === k ? 'on' : ''}" onclick="orgTabSet('${k}')">${l}</button>`).join('')}</div>${body}</div>
     <div class="navrow"><button class="back" onclick="go('orgs')">← Байгууллагууд</button><button class="back" onclick="go('')">Төв →</button></div>`;
 }
@@ -1228,6 +1246,192 @@ function newInspectionFor(id) {
   set('f_name', d.object_name); set('f_loc', d.location); set('f_eq', d.equipment); set('f_v', d.voltage_v);
   saveDraft();
 }
+
+// ================= Үзлэгийн төлөвлөгөө (AI агент: хугацаа товлох, бэлтгэл) =================
+// Хүсэлтийн зэрэг, хүссэн огноо, инженерийн ачаалал, тухайн байгууллагын өмнөх үзлэгийн зөрчил, биелээгүй
+// зөвлөмж, сул үзүүлэлтээс төлөвлөгөөний ноорог гаргана. Хүн шалгаж "Батлаж товлох" хүртэл ноорог хэвээр.
+const PLAN_CAP = 2;                                            // нэг өдөрт товлох үзлэгийн дээд тоо
+const PRI_DAYS = { 'Яаралтай': 1, 'Өндөр': 3, 'Дунд': 5, 'Энгийн': 7, 'Бага': 10 };
+const pad2 = (n) => String(n).padStart(2, '0');
+const dstr = (dt) => `${dt.getFullYear()}-${pad2(dt.getMonth() + 1)}-${pad2(dt.getDate())}`;
+const todayStr = () => dstr(new Date());
+const pdate = (s) => { const [y, m, d] = String(s).split('-').map(Number); return new Date(y, m - 1, d); };
+const isWork = (dt) => dt.getDay() !== 0 && dt.getDay() !== 6;
+function addWork(dt, n) { const x = new Date(dt); while (n > 0) { x.setDate(x.getDate() + 1); if (isWork(x)) n--; } return x; }
+const planLoad = (day, exceptId) => records.filter((x) => x.id !== exceptId && x.plan && x.plan.status === 'scheduled' && x.plan.date === day).length;
+function prevOf(r) {
+  const k = orgKey((r.data || {}).object_name);
+  return records.filter((x) => x.id !== r.id && orgKey((x.data || {}).object_name) === k && (x.result || ((x.data || {}).checklist || []).some((c) => c.status && c.status !== 'not_checked')))
+    .sort((a, b) => inspDate(b).localeCompare(inspDate(a)))[0] || null;
+}
+function pickDate(r) {
+  const q = r.request || {}, pr = q.priority || '', days = PRI_DAYS[pr] ?? 5;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const soonest = addWork(today, 1), latest = addWork(today, days);
+  let dt = soonest, why = [];
+  if (q.preferredDate && pdate(q.preferredDate) >= soonest) { dt = pdate(q.preferredDate); why.push(`хүсэлт гаргагчийн хүссэн огноо (${q.preferredDate})`); }
+  else { dt = pr === 'Яаралтай' ? soonest : latest; why.push(pr ? `"${pr}" зэрэглэлтэй хүсэлт → ${days} ажлын өдрийн дотор` : 'энгийн хугацаа (5 ажлын өдөр)'); if (q.preferredDate) why.push(`хүссэн огноо (${q.preferredDate}) өнгөрсөн`); }
+  for (let i = 0; i < 60 && (!isWork(dt) || planLoad(dstr(dt), r.id) >= PLAN_CAP); i++) {
+    if (i === 0) why.push(!isWork(dt) ? 'амралтын өдөр тул дараагийн ажлын өдөр' : `тэр өдөр ${PLAN_CAP} үзлэг товлогдсон тул шилжүүлэв`);
+    dt = addWork(dt, 1);
+  }
+  return { date: dstr(dt), why };
+}
+function makePlan(r, old) {
+  const d = r.data || {}, q = r.request || {}, prev = prevOf(r), pc = prev && prev.result && prev.result.conclusion;
+  const text = [d.equipment, d.observations, q.type, q.description].join(' ').toLowerCase();
+  const { date, why } = pickDate(r);
+  const focus = [];
+  if (q.type || q.description) focus.push({ t: `Хүсэлтийн шалтгаан: ${[q.type, q.description].filter(Boolean).join(' — ')}`.slice(0, 220), src: 'Хүсэлт' });
+  if (prev) {
+    ((prev.data || {}).checklist || []).filter((c) => c.status === 'violation' || c.status === 'partial').slice(0, 6)
+      .forEach((c) => focus.push({ t: `${c.item}${c.note ? ' — ' + c.note : ''}`, src: `Өмнөх үзлэг ${inspDate(prev)}: ${c.status === 'violation' ? 'зөрчил' : 'хэсэгчлэн'}` }));
+    ((pc && pc.recommendations) || []).filter((x) => ['Яаралтай', 'Өндөр'].includes(x.priority)).slice(0, 5)
+      .forEach((x) => focus.push({ t: `Зөвлөмж биелсэн эсэх: ${x.title || x.action}`.slice(0, 200), src: `${x.priority} зөвлөмж` }));
+    const sc = (prev.data || {}).scores || {};
+    INDICATORS.filter(([no]) => sc[no] !== undefined && sc[no] !== 'na' && Number(sc[no]) < 5).slice(0, 4)
+      .forEach(([no, , n]) => focus.push({ t: `${no}. ${n} (өмнө ${sc[no]} оноо)`, src: 'Сул үзүүлэлт' }));
+  }
+  if (focus.length < 2) focus.push({ t: '15 үзүүлэлтийг бүрэн шалгах (анхны үзлэг)', src: 'Аргачлал' });
+  const hv = Number(d.voltage_v) > 1000 || /тп|дэд станц|6 ?кв|10 ?кв|35 ?кв|трансформатор/.test(text);
+  const tools = ['Суурилуулалтын шалгагч UT595 (тусгаарлагч, Zs, RCD)', 'True RMS мультиметр', 'Клемметр — ачааллын гүйдэл',
+    hv ? 'Газардуулга хэмжигч UT521 (гадастай)' : 'Газардуулгын клемметр UT278A+', 'Дулааны камер (самбар, холболтын халалт)',
+    'UT07B-EU залгуурын шалгагч', 'Лазер метр (талбай, зай)', 'Утас/камер — зураг', 'Шалгах хуудас (апп)'];
+  const safety = ['Объектын хариуцсан цахилгаанчинтай уулзаж нэг шугамын схем, өмнөх актыг авах',
+    'Хувийн хамгаалах хэрэгсэл: тусгаарлагч бээлий, хүчдэл заагч, хамгаалалтын шил', 'Тусгаарлагчийн хэмжилтийг зөвхөн хүчдэлгүй хэлхээнд, зөвшөөрөлтэйгээр хийх'];
+  if (hv) safety.push('1000 В-оос дээш байгууламж: наряд-зөвшөөрөл, 2-оос доошгүй хүн, тусгаарлагч хэрэгсэл');
+  const viol = prev ? ((prev.data || {}).checklist || []).filter((c) => c.status === 'violation').length : 0;
+  const engs = records.map((x) => (x.data || {}).engineer_name).filter(Boolean);
+  const eng = (prev && prev.data && prev.data.engineer_name) || engs.sort((a, b) => engs.filter((x) => x === b).length - engs.filter((x) => x === a).length)[0] || '';
+  return {
+    status: 'draft', by: 'ai', created: nowIso(), date, time: (old && old.time) || '10:00', duration_h: (old && old.duration_h) || (hv || viol > 5 ? 3 : 2),
+    engineer: (old && old.engineer) || d.engineer_name || eng, contact: (old && old.contact) || [q.requestedBy, q.requesterEmail].filter(Boolean).join(', '),
+    why: why.concat(prev ? [`өмнөх үзлэг ${inspDate(prev)}${pc ? ` (${pc.score.pct}% · ${pc.score.grade})` : ''}`] : ['өмнөх үзлэг байхгүй']),
+    focus, tools, toolsOn: tools.map(() => true), safety, notes: (old && old.notes) || '',
+  };
+}
+const recOf = (id) => records.find((x) => x.id === id);
+function planSave(r) { r.updated = nowIso(); persist(); updateStatus(); if (location.hash.startsWith('#/org/')) renderOrg(); if (location.hash === '#/plans') renderPlans(); }
+function planMake(id) { const r = recOf(id); if (!r) return; r.plan = makePlan(r, r.plan); planSave(r); }
+function planSet(id, k, v) {
+  const r = recOf(id); if (!r || !r.plan) return;
+  r.plan[k] = k === 'duration_h' ? Number(v) || 1 : v;
+  if (k === 'date' && r.plan.status === 'scheduled') planDate(r);
+  r.updated = nowIso(); persist(); updateStatus();
+  if (k === 'date') { const n = planLoad(v, r.id); const w = $('plWarn'); if (w) w.textContent = n >= PLAN_CAP ? `⚠ ${v}-нд ${n} үзлэг товлогдсон байна.` : !isWork(pdate(v)) ? '⚠ Амралтын өдөр байна.' : ''; }
+}
+function planTool(id, i, on) { const r = recOf(id); if (!r || !r.plan) return; r.plan.toolsOn[i] = on; persist(); }
+function planDel(id, k, i) { const r = recOf(id); if (!r || !r.plan) return; r.plan[k].splice(i, 1); if (k === 'tools') r.plan.toolsOn.splice(i, 1); planSave(r); }
+function planAdd(id, k, inp) {
+  const r = recOf(id), v = $(inp).value.trim(); if (!r || !r.plan || !v) return;
+  if (k === 'focus') r.plan.focus.push({ t: v, src: 'Гараар' }); else { r.plan[k].push(v); if (k === 'tools') r.plan.toolsOn.push(true); }
+  planSave(r);
+}
+// Товлосон огноог үзлэгийн огноо болгоно (календарь, бүртгэлд харагдана)
+function planDate(r) { r.data = r.data || {}; r.data.inspection_date = r.plan.date; if (r.id === currentId && $('f_date')) $('f_date').value = r.plan.date; }
+function planApprove(id) {
+  const r = recOf(id); if (!r || !r.plan) return;
+  if (!r.plan.date) { alert('Огноо сонгоно уу.'); return; }
+  r.plan.status = 'scheduled'; r.plan.approved = nowIso(); planDate(r); planSave(r);
+}
+function planUndo(id) { const r = recOf(id); if (!r || !r.plan) return; r.plan.status = 'draft'; planSave(r); }
+function planRemove(id, b) {
+  if (!b.classList.contains('sure')) { b.classList.add('sure'); b.textContent = 'Устгах уу?'; setTimeout(() => { b.classList.remove('sure'); b.textContent = 'Устгах'; }, 3500); return; }
+  const r = recOf(id); if (!r) return; delete r.plan; planSave(r);
+}
+function planHtml(r) {
+  const p = r.plan, dn = sectionDone(r.data || {});
+  if (!p) return `<div class="empty" style="padding:16px"><span class="big-ico">📅</span>Энэ үзлэгт төлөвлөгөө гараагүй байна.<br>
+    <span class="muted">AI агент хүсэлтийн зэрэг, инженерийн ачаалал, өмнөх үзлэгийн зөрчлөөс огноо, анхаарах зүйл, багажийн жагсаалт гаргана.</span>
+    <div class="outnav" style="justify-content:center"><button onclick="planMake('${r.id}')">⚡ AI агентаар төлөвлөх</button></div></div>`;
+  const sched = p.status === 'scheduled', late = sched && !dn.checklist && p.date < todayStr();
+  const engs = [...new Set(records.map((x) => (x.data || {}).engineer_name).concat(records.map((x) => x.plan && x.plan.engineer)).filter(Boolean))];
+  const li = (k, arr, f) => arr.map((x, i) => `<li>${f(x, i)}<button class="mini sec" title="Хасах" onclick="planDel('${r.id}','${k}',${i})">✕</button></li>`).join('');
+  return `<div class="og-chips"><span class="og-chip ${sched ? (late ? 'e' : 'ok') : 'w'}">${sched ? (late ? '⚠ Хоцорсон' : '✓ Товлогдсон') : '✎ AI ноорог — шалгаад батална'}</span>
+      ${p.by === 'ai' ? '<span class="og-chip c">AI агент</span>' : ''}${dn.checklist ? '<span class="og-chip ok">Үзлэг хийгдсэн</span>' : ''}</div>
+    <div class="pl-why"><b>AI яагаад энэ огноог сонгов:</b> ${p.why.map(esc).join('; ')}.</div>
+    <div class="pl-grid">
+      <label>Огноо<input type="date" value="${esc(p.date)}" onchange="planSet('${r.id}','date',this.value)"></label>
+      <label>Цаг<input type="time" value="${esc(p.time)}" onchange="planSet('${r.id}','time',this.value)"></label>
+      <label>Үргэлжлэх (цаг)<input type="number" min="1" max="12" value="${esc(p.duration_h)}" onchange="planSet('${r.id}','duration_h',this.value)"></label>
+      <label>Инженер<input list="engList" value="${esc(p.engineer)}" placeholder="Нэр" onchange="planSet('${r.id}','engineer',this.value)"></label>
+      <label>Холбоо барих<input value="${esc(p.contact)}" placeholder="Хариуцсан хүн, утас" onchange="planSet('${r.id}','contact',this.value)"></label>
+    </div><datalist id="engList">${engs.map((x) => `<option value="${esc(x)}">`).join('')}</datalist>
+    <div class="muted" id="plWarn" style="color:var(--warn);font-size:12.5px"></div>
+    <div class="pl-cols"><div>
+      <h3 style="margin:10px 0 0">Анхаарах зүйл (${p.focus.length})</h3>
+      <ul class="pl-list">${li('focus', p.focus, (x) => `<span>${esc(x.t)}</span><span class="src">${esc(x.src)}</span>`)}</ul>
+      <div class="pl-add"><input id="plF" placeholder="Анхаарах зүйл нэмэх"><button class="mini" onclick="planAdd('${r.id}','focus','plF')">+</button></div>
+      <h3 style="margin:14px 0 0">Аюулгүй ажиллагаа</h3>
+      <ul class="pl-list">${li('safety', p.safety, (x) => `<span>${esc(x)}</span>`)}</ul>
+      <div class="pl-add"><input id="plS" placeholder="Нэмэх"><button class="mini" onclick="planAdd('${r.id}','safety','plS')">+</button></div>
+    </div><div>
+      <h3 style="margin:10px 0 0">Авч явах багаж</h3>
+      <ul class="pl-list">${p.tools.map((x, i) => `<li><input type="checkbox"${p.toolsOn[i] !== false ? ' checked' : ''} onchange="planTool('${r.id}',${i},this.checked)"><span>${esc(x)}</span><button class="mini sec" title="Хасах" onclick="planDel('${r.id}','tools',${i})">✕</button></li>`).join('')}</ul>
+      <div class="pl-add"><input id="plT" placeholder="Багаж нэмэх"><button class="mini" onclick="planAdd('${r.id}','tools','plT')">+</button></div>
+      <h3 style="margin:14px 0 0">Тэмдэглэл</h3>
+      <textarea rows="3" placeholder="Нэвтрэх зөвшөөрөл, хаалганы код гэх мэт" onchange="planSet('${r.id}','notes',this.value)">${esc(p.notes)}</textarea>
+    </div></div>
+    <div class="og-acts" style="margin-top:14px">
+      ${sched ? `<button class="sec" onclick="planUndo('${r.id}')">↩ Ноорог болгох</button>` : `<button onclick="planApprove('${r.id}')">✓ Батлаж товлох</button>`}
+      <button class="sec" onclick="planMake('${r.id}')">⚡ AI-аар дахин төлөвлөх</button>
+      <button class="sec" onclick="planPrint('${r.id}')">🖨 Төлөвлөгөө хэвлэх</button>
+      ${dn.checklist ? '' : `<button class="sec" onclick="openInspection('${r.id}', false);go('checklist')">Үзлэг эхлүүлэх →</button>`}
+      <button class="mini del" onclick="planRemove('${r.id}', this)">Устгах</button></div>`;
+}
+function planPrint(id) {
+  const r = recOf(id); if (!r || !r.plan) return; const p = r.plan, d = r.data || {};
+  const w = window.open('', '_blank'); if (!w) { alert('Pop-up хориглолтыг зөвшөөрнө үү.'); return; }
+  const ul = (a) => '<ul>' + a.map((x) => `<li>${esc(x)}</li>`).join('') + '</ul>';
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Үзлэгийн төлөвлөгөө — ${esc(d.object_name || '')}</title>
+    <style>body{font:12pt Arial,sans-serif;margin:18mm;color:#111} h1{font-size:16pt;text-align:center;margin:0 0 4mm} table{border-collapse:collapse;width:100%;margin:3mm 0} td{border:1px solid #888;padding:5px 8px;vertical-align:top} td:first-child{width:35%;background:#eef1f7;font-weight:bold} h2{font-size:12.5pt;margin:5mm 0 1mm} li{margin:2px 0}</style></head><body>
+    <h1>ЦАХИЛГААНЫ ЭРСДЭЛИЙН ҮЗЛЭГИЙН ТӨЛӨВЛӨГӨӨ</h1>
+    <table><tr><td>Байгууллага / объект</td><td>${esc(d.object_name || '')}</td></tr><tr><td>Хаяг</td><td>${esc(d.location || '')}</td></tr>
+    <tr><td>Огноо, цаг</td><td>${esc(p.date)} ${esc(p.time)} (≈${esc(p.duration_h)} цаг)</td></tr><tr><td>Инженер</td><td>${esc(p.engineer || '')}</td></tr>
+    <tr><td>Холбоо барих</td><td>${esc(p.contact || '')}</td></tr><tr><td>Төлөв</td><td>${p.status === 'scheduled' ? 'Товлогдсон' : 'Ноорог'}</td></tr></table>
+    <h2>Анхаарах зүйл</h2>${ul(p.focus.map((x) => `${x.t} (${x.src})`))}
+    <h2>Авч явах багаж</h2>${ul(p.tools.filter((_, i) => p.toolsOn[i] !== false))}
+    <h2>Аюулгүй ажиллагаа</h2>${ul(p.safety)}${p.notes ? `<h2>Тэмдэглэл</h2><p>${esc(p.notes)}</p>` : ''}
+    <script>setTimeout(()=>print(),300)<\/script></body></html>`);
+  w.document.close();
+}
+// ---- Бүх үзлэгийн төлөвлөгөө (#/plans) ----
+function renderPlans() {
+  const t = todayStr();
+  const withP = records.filter((r) => r.plan).sort((a, b) => a.plan.date.localeCompare(b.plan.date));
+  const open = withP.filter((r) => !sectionDone(r.data || {}).checklist), done = withP.filter((r) => sectionDone(r.data || {}).checklist);
+  const noPlan = records.filter((r) => !r.plan && !r.result && !sectionDone(r.data || {}).checklist && (r.data || {}).object_name);
+  const late = open.filter((r) => r.plan.status === 'scheduled' && r.plan.date < t).length;
+  const wk = dstr(addWork(new Date(), 5));
+  const row = (r, i) => { const p = r.plan, d = r.data || {}, [cl, lb] = statusOf(r);
+    return `<tr style="animation-delay:${(i * .04).toFixed(2)}s"><td style="white-space:nowrap"><b>${esc(p.date)}</b> <span class="muted">${esc(p.time || '')}</span></td>
+      <td><b>${esc(d.object_name || '')}</b><div class="muted">${esc(d.location || '')}</div></td><td>${esc(p.engineer || '—')}</td>
+      <td>${r.request && r.request.priority ? `<span class="pr ${PR_CLS[r.request.priority] || 'm'}">${esc(r.request.priority)}</span>` : '—'}</td>
+      <td><span class="st ${cl}">${esc(lb)}</span></td>
+      <td style="white-space:nowrap"><button class="mini" onclick="openOrg('${encodeURIComponent(orgKey(d.object_name))}','${r.id}','plan')">Нээх</button></td></tr>`; };
+  $('v-plans').innerHTML = `<h2><span class="n">📅</span>Үзлэгийн төлөвлөгөө</h2>
+    <div class="kpis">
+      <div class="kpi"><b>${open.filter((r) => r.plan.status === 'scheduled').length}</b><span>Товлогдсон</span></div>
+      <div class="kpi"><b>${open.filter((r) => r.plan.status === 'draft').length}</b><span>AI ноорог (батлах)</span></div>
+      <div class="kpi"><b>${open.filter((r) => r.plan.status === 'scheduled' && r.plan.date >= t && r.plan.date <= wk).length}</b><span>Ойрын 5 ажлын өдөрт</span></div>
+      <div class="kpi"><b style="color:${late ? 'var(--err)' : 'inherit'}">${late}</b><span>Хоцорсон</span></div>
+    </div>
+    ${noPlan.length ? `<div class="msg warn" style="margin:12px 0">Төлөвлөгөөгүй ${noPlan.length} үзлэг байна: ${noPlan.slice(0, 4).map((r) => esc(r.data.object_name)).join(', ')}${noPlan.length > 4 ? '…' : ''}
+      <div class="actions" style="margin-top:8px"><button onclick="planAll()">⚡ AI агентаар бүгдийг төлөвлөх</button></div></div>` : ''}
+    <h3>Хийгдэх үзлэг (${open.length})</h3>
+    <div class="tw"><table class="reg"><tr><th>Огноо</th><th>Байгууллага</th><th>Инженер</th><th>Зэрэг</th><th>Төлөв</th><th></th></tr>
+      ${open.map(row).join('') || `<tr><td colspan="6" class="muted">Төлөвлөсөн үзлэг алга. Формоор ирсэн хүсэлт зөвшөөрөгдөхөд AI агент автоматаар төлөвлөгөөний ноорог гаргана.</td></tr>`}</table></div>
+    ${done.length ? `<h3>Үзлэг хийгдсэн (${done.length})</h3><div class="tw"><table class="reg"><tr><th>Огноо</th><th>Байгууллага</th><th>Инженер</th><th>Зэрэг</th><th>Төлөв</th><th></th></tr>${done.slice(-20).reverse().map(row).join('')}</table></div>` : ''}
+    <p class="muted" style="margin-top:12px">Ажлын процесс: хүсэлт зөвшөөрөгдөнө → <b>AI агент төлөвлөнө</b> (огноо, анхаарах зүйл, багаж) → та шалгаж "Батлаж товлох" → инженер талбайн үзлэг хийнэ. Нэг өдөрт ${PLAN_CAP}-оос илүү үзлэг товлохгүй, амралтын өдөр алгасна.</p>
+    <div class="navrow"><button class="back" onclick="go('')">← Төв</button><button class="back" onclick="go('registry')">Үзлэгийн бүртгэл →</button></div>`;
+}
+function planAll() {
+  records.filter((r) => !r.plan && !r.result && !sectionDone(r.data || {}).checklist && (r.data || {}).object_name)
+    .sort((a, b) => (PRI_DAYS[(a.request || {}).priority] ?? 5) - (PRI_DAYS[(b.request || {}).priority] ?? 5))
+    .forEach((r) => { r.plan = makePlan(r); });
+  persist(); renderPlans(); updateStatus();
+}
+
 // ================= Ирсэн үзлэгийн хүсэлт (amgaa-form → Google Sheet) =================
 // Зөвшөөрөгдсөн хүсэлт бүр автоматаар "Бүх үзлэг" жагсаалтад шинэ үзлэг болж орно.
 const REQ_URL = 'https://script.google.com/macros/s/AKfycby2BlODHGqv6pkayWV74rQgsOlFgEZzMyb8a3ME4F0Bus0QcTlhldrWwlDQz7FrhcTCLQ/exec';
@@ -1244,6 +1448,7 @@ function importRequest(q) {
     observations: `Үзлэгийн хүсэлт №${q.id} — ${q.type || ''}, ${q.priority || ''}\n${q.description || ''}\nХүсэлт гаргагч: ${q.requestedBy || ''} (${q.requesterEmail || ''})`,
   } };
   records.unshift(r);
+  r.plan = makePlan(r);                 // Зөвшөөрөгдсөн хүсэлтэд AI агент төлөвлөгөөний ноорог гаргана
   const seen = reqSeen(); seen.add(q.id); store.set(REQ_SEEN, JSON.stringify([...seen]));
 }
 async function syncRequests() {
