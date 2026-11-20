@@ -1278,7 +1278,10 @@ function reqForgetKey() { store.del(REQ_KEY); incoming = []; reqErr = ''; render
 function reqImport(id) { const q = incoming.find((x) => x.id === id); if (!q) return; importRequest(q); persist(); updateStatus(); renderRegistry(); }
 const reqNew = () => incoming.filter((q) => q.status === 'Хүлээгдэж буй' || (q.status === 'Зөвшөөрсөн' && !reqRec(q.id))).length;
 function reqTable() {
-  if (!store.get(REQ_KEY)) return `<div class="reqbox"><b>Формоор ирсэн хүсэлтүүдийг холбох</b>
+  const sheetBtn = isSheetUrl(store.get(REQ_SHEET))
+    ? `<button class="mini sec" onclick="reqOpenSheet()">📊 Google Sheet нээх</button><span class="lnk muted" onclick="reqSetSheet()">Холбоос солих</span>`
+    : `<button class="mini sec" onclick="reqSetSheet()">📊 Sheet-ийн холбоос нэмэх</button>`;
+  if (!store.get(REQ_KEY)) return `<div class="actions" style="margin:10px 0">${sheetBtn}</div><div class="reqbox"><b>Формоор ирсэн хүсэлтүүдийг холбох</b>
     <p class="muted">Apps Script дээр <code>showListKey</code> функцийг Run хийгээд Execution log-д гарах түлхүүрийг энд буулгана. Нэг удаа хийхэд хангалттай.</p>
     <input id="reqKey" placeholder="Түлхүүр" autocomplete="off"> <button class="mini" onclick="reqSaveKey()">Холбох</button></div>`;
   const rows = incoming.map((q) => { const rec = reqRec(q.id), st = REQ_ST[q.status] || '';
@@ -1291,8 +1294,7 @@ function reqTable() {
       <td><span class="st ${st}">${esc(q.status)}</span>${rec ? '<div class="muted">✓ бүртгэлд орсон</div>' : ''}</td><td>${act}</td></tr>`; }).join('');
   return `${reqErr ? `<p class="filt" style="color:var(--err)">${esc(reqErr)}</p>` : ''}
     <div class="actions" style="margin:10px 0"><button class="mini sec" onclick="syncRequests()">${reqBusy ? 'Татаж байна…' : '↻ Шинэчлэх'}</button>
-      ${isSheetUrl(store.get(REQ_SHEET)) ? `<button class="mini sec" onclick="reqOpenSheet()">📊 Google Sheet нээх</button><span class="lnk muted" onclick="reqSetSheet()">Холбоос солих</span>`
-        : `<button class="mini sec" onclick="reqSetSheet()">📊 Sheet-ийн холбоос нэмэх</button>`}
+      ${sheetBtn}
       <span class="muted">${reqAt ? 'Сүүлд шинэчилсэн: ' + reqAt + ' · ' : ''}Зөвшөөрөгдсөн хүсэлт «Бүх үзлэг» руу автоматаар орно.</span>
       <span class="lnk muted" onclick="reqForgetKey()">Түлхүүр солих</span></div>
     <div class="tw"><table class="reg"><tr><th>Ирсэн</th><th>Объект / хаяг</th><th>Төрөл</th><th>Яаралтай</th><th>Хүссэн огноо</th><th>Хүсэлт гаргагч</th><th>Төлөв</th><th></th></tr>
