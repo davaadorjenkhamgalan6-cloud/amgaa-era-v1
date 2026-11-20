@@ -9,6 +9,8 @@ export const CODE = 'ЦБД';
 const SEC = /^\s*(\d{1,2}(?:\.\d{1,3}){1,4})\.?\s+(\S.*)$/;
 const CHAP = /^\s*((?:[IVX]+|\d{1,2})\s*[-–]?\s*(?:р|дүгээр|дугаар|дахь)?\s*бүлэг(?=[\s.,:]|$).*|[а-яөүё]+(?:дугаар|дүгээр|дахь)\s+бүлэг(?=[\s.,:]|$).*|бүлэг\s+[IVX\d]+.*|[IVX]+\.\s+\S.*)$/i;
 const MAX = 1800;
+// Хуучин монгол фонттой PDF-д "ү/ө" нь украин "ї/є" болж гардаг (жишээ: ЦБД-ийн PDF). Хайлт, харагдалт зөв байхаар засна.
+export const fixMn = (s) => String(s || '').replace(/ї/g, 'ү').replace(/Ї/g, 'Ү').replace(/є/g, 'ө').replace(/Є/g, 'Ө');
 
 // pages: [{ page, text }] эсвэл нэг мөр текст
 export function chunkText(pages) {
@@ -17,7 +19,7 @@ export function chunkText(pages) {
   let chapter = '', cur = null;
   const push = () => {
     if (!cur) return;
-    const body = cur.lines.join('\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+    const body = fixMn(cur.lines.join('\n')).replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
     if (body.length > 15) {
       // Урт заалтыг хэсэглэнэ (өгүүлбэрийн хилээр)
       const parts = [];
@@ -51,7 +53,7 @@ export function chunkText(pages) {
   push();
   return out;
 }
-const chapterTitle = (c) => (c || '').replace(/\s+/g, ' ').slice(0, 120);
+const chapterTitle = (c) => fixMn(c).replace(/\s+/g, ' ').slice(0, 120);
 // "2.5 мм" гэх мэт хэмжээг заалт гэж андуурахгүй: дараагийн үг нь нэгж бол алгасна
 function plausible(num, rest) {
   const n = num.split('.').map(Number);
@@ -62,7 +64,7 @@ function plausible(num, rest) {
 // ---------- Хайлт (BM25, монгол үгийн язгуурыг ойролцоогоор) ----------
 const STOP = new Set(('болон бол нь юм байх байна байдаг тухай ямар хэд хэдэн вэ уу үү бэ энэ тэр ба эсвэл гэж гэх хэрхэн яаж дүрэм дүрмийн цбд заалт заалтыг заасан ' +
   'хэрэгтэй шаардлагатай шаардлага ямар ямархуу хэр хэрэв бас мөн бүр бүх ч л зөвхөн дээр доор онд оны тул учир гэвэл бөгөөд харин хийх хийнэ байгаа').split(' '));
-export function norm(s) { return String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/[«»“”"'()[\]{}:;,!?]/g, ' '); }
+export function norm(s) { return fixMn(s).toLowerCase().replace(/ё/g, 'е').replace(/[«»“”"'()[\]{}:;,!?]/g, ' '); }
 export function terms(s) {
   const out = [];
   for (let w of norm(s).split(/[^0-9a-zа-яөүa-z.]+/i)) {

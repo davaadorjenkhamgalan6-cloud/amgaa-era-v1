@@ -1957,8 +1957,10 @@ async function init() {
   let local = [];
   try { local = await N.listDocs(); } catch {}
   const b = await N.loadBundledAll();
+  // Апп-тай хамт ирсэн дүрэмтэй ижил кодтой (жишээ: ЦБД) хөтчийн хуулбарыг давхар хайхгүй
+  const have = new Set(b.map((x) => x.code));
   setRules([...b.map((x) => ({ ...x, name: x.name || 'Цахилгаан байгууламжийн дүрэм', source: 'bundled' })),
-    ...local.map((d) => ({ ...d, code: d.code || (d.chunks[0] && d.chunks[0].code) || N.CODE, source: 'local' }))]);
+    ...local.map((d) => ({ ...d, code: d.code || (d.chunks[0] && d.chunks[0].code) || N.CODE, source: 'local' })).filter((d) => !have.has(d.code))]);
 }
 fetch('/api/chat').then((r) => r.json()).then((s) => { aiReady = Boolean(s.ready); renderRuleBar(); }).catch(() => {});
 

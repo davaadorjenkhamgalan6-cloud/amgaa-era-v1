@@ -85,3 +85,20 @@ test('олон дүрэм: mergeDocs кодоор ялгаж, id давхард�
   // дахин нэгтгэхэд (JSON-оор суулгасан) угтвар давхардахгүй
   assert.equal(mergeDocs([{ id: 'z', chunks: m }])[1].section, 'ТЭД 1.1');
 });
+
+test('хуучин фонтын ї/є-г ү/ө болгож, хайлтад олдоно', async () => {
+  const { chunkText, buildIndex, search, fixMn } = await import('../public/norms.js');
+  assert.equal(fixMn('эсэргїїцэл Єндєр'), 'эсэргүүцэл Өндөр');
+  const ch = chunkText('1.7.1. Газардуулгын эсэргїїцэл 4 Ом-оос ихгїй байна.\n1.7.2. Єєр заалт текст энд байна.');
+  assert.match(ch[0].content, /эсэргүүцэл/);
+  assert.equal(search(buildIndex(ch), 'газардуулгын эсэргүүцэл')[0].section, '1.7.1');
+});
+
+test('апп-тай хамт ирэх ЦБД: 1423 заалт, ү/ө зөв', async () => {
+  const fs = await import('node:fs');
+  const ix = JSON.parse(fs.readFileSync(new URL('../public/norms/index.json', import.meta.url)));
+  const e = ix.docs.find((d) => d.code === 'ЦБД'); assert.ok(e);
+  const j = JSON.parse(fs.readFileSync(new URL('../public/norms/' + e.file, import.meta.url)));
+  assert.equal(new Set(j.chunks.map((c) => c.section)).size, 1423);
+  assert.ok(!j.chunks.some((c) => /[їє]/i.test(c.content)));
+});
