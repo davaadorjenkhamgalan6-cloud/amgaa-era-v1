@@ -131,3 +131,23 @@ test('normsChat (Gemini): загвар thinkingLevel-ийг танихгүй б�
   assert.equal(bodies.length, 2);
   assert.equal(r.answer, '4 Ом [§2.1.5].');
 });
+
+test('normsChat (Gemini): үндсэн загвар 503 (ачаалалтай) бол нөөц загвар руу шилжинэ', async () => {
+  const urls = [];
+  const fetchFn = async (url) => {
+    urls.push(url);
+    if (url.includes('gemini-3.5-flash')) return { ok: false, status: 503, json: async () => ({ error: { message: 'high demand' } }) };
+    return { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: '4 Ом [§2.1.5].' }] } }] }) };
+  };
+  const r = await normsChat({ question: 'Газардуулга?', excerpts: [{ section: '2.1.5', content: '4 Ом' }], provider: 'gemini', env: { GEMINI_API_KEY: 'k' }, fetchFn });
+  assert.equal(r.answer, '4 Ом [§2.1.5].');
+  assert.equal(urls.length, 2);
+  assert.ok(urls[1].includes('gemini-flash-lite-latest'));
+});
+
+test('normsChat (Gemini): түлхүүр буруу (403) бол нөөц загвар туршихгүй', async () => {
+  let n = 0;
+  const fetchFn = async () => { n++; return { ok: false, status: 403, json: async () => ({ error: { message: 'API key invalid' } }) }; };
+  await assert.rejects(normsChat({ question: 'Газардуулга?', excerpts: [{ section: '2.1.5', content: '4 Ом' }], provider: 'gemini', env: { GEMINI_API_KEY: 'k' }, fetchFn }), /403/);
+  assert.equal(n, 1);
+});
