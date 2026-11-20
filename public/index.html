@@ -1231,7 +1231,8 @@ function newInspectionFor(id) {
 // ================= Ирсэн үзлэгийн хүсэлт (amgaa-form → Google Sheet) =================
 // Зөвшөөрөгдсөн хүсэлт бүр автоматаар "Бүх үзлэг" жагсаалтад шинэ үзлэг болж орно.
 const REQ_URL = 'https://script.google.com/macros/s/AKfycby2BlODHGqv6pkayWV74rQgsOlFgEZzMyb8a3ME4F0Bus0QcTlhldrWwlDQz7FrhcTCLQ/exec';
-const REQ_KEY = 'amgaa_req_key', REQ_SEEN = 'amgaa_req_seen_v1';
+const REQ_KEY = 'amgaa_req_key', REQ_SEEN = 'amgaa_req_seen_v1', REQ_SHEET = 'amgaa_req_sheet';
+const isSheetUrl = (u) => /^https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+/.test(String(u || '').trim());
 let incoming = [], reqErr = '', reqBusy = false, reqAt = '';
 const reqSeen = () => { try { return new Set(JSON.parse(store.get(REQ_SEEN) || '[]')); } catch { return new Set(); } };
 const reqRec = (id) => records.find((r) => r.request && r.request.id === id);
@@ -1251,6 +1252,7 @@ async function syncRequests() {
   try {
     const out = await fetch(REQ_URL + '?op=list&key=' + encodeURIComponent(key)).then((r) => r.json());
     if (!out.ok) throw new Error(out.error || 'Алдаа');
+    if (isSheetUrl(out.sheetUrl)) store.set(REQ_SHEET, out.sheetUrl.trim());
     incoming = (out.requests || []).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     const seen = reqSeen(); let added = 0;
     incoming.forEach((q) => { if (q.status === 'Зөвшөөрсөн' && !seen.has(q.id) && !reqRec(q.id)) { importRequest(q); added++; } });
@@ -1263,6 +1265,14 @@ async function syncRequests() {
 function reqSaveKey() {
   const v = ($('reqKey').value || '').trim(); if (!v) return;
   store.set(REQ_KEY, v); syncRequests(); renderRegistry();
+}
+// Хүсэлтүүд хадгалагддаг Google Sheet-ийн холбоос. Apps Script шинэ хувилбар нь өөрөө илгээнэ; эс бөгөөс гараар оруулна.
+function reqOpenSheet() { const u = store.get(REQ_SHEET); if (isSheetUrl(u)) window.open(u, '_blank', 'noopener'); else reqSetSheet(); }
+function reqSetSheet() {
+  const v = (prompt('«Үзлэгийн хүсэлтүүд» Google Sheet-ийн холбоосыг буулгана уу:', store.get(REQ_SHEET) || '') || '').trim();
+  if (!v) return;
+  if (!isSheetUrl(v)) { alert('Google Sheet-ийн холбоос биш байна. https://docs.google.com/spreadsheets/d/... хэлбэртэй байх ёстой.'); return; }
+  store.set(REQ_SHEET, v); renderRegistry();
 }
 function reqForgetKey() { store.del(REQ_KEY); incoming = []; reqErr = ''; renderRegistry(); }
 function reqImport(id) { const q = incoming.find((x) => x.id === id); if (!q) return; importRequest(q); persist(); updateStatus(); renderRegistry(); }
@@ -1281,6 +1291,8 @@ function reqTable() {
       <td><span class="st ${st}">${esc(q.status)}</span>${rec ? '<div class="muted">✓ бүртгэлд орсон</div>' : ''}</td><td>${act}</td></tr>`; }).join('');
   return `${reqErr ? `<p class="filt" style="color:var(--err)">${esc(reqErr)}</p>` : ''}
     <div class="actions" style="margin:10px 0"><button class="mini sec" onclick="syncRequests()">${reqBusy ? 'Татаж байна…' : '↻ Шинэчлэх'}</button>
+      ${isSheetUrl(store.get(REQ_SHEET)) ? `<button class="mini sec" onclick="reqOpenSheet()">📊 Google Sheet нээх</button><span class="lnk muted" onclick="reqSetSheet()">Холбоос солих</span>`
+        : `<button class="mini sec" onclick="reqSetSheet()">📊 Sheet-ийн холбоос нэмэх</button>`}
       <span class="muted">${reqAt ? 'Сүүлд шинэчилсэн: ' + reqAt + ' · ' : ''}Зөвшөөрөгдсөн хүсэлт «Бүх үзлэг» руу автоматаар орно.</span>
       <span class="lnk muted" onclick="reqForgetKey()">Түлхүүр солих</span></div>
     <div class="tw"><table class="reg"><tr><th>Ирсэн</th><th>Объект / хаяг</th><th>Төрөл</th><th>Яаралтай</th><th>Хүссэн огноо</th><th>Хүсэлт гаргагч</th><th>Төлөв</th><th></th></tr>
