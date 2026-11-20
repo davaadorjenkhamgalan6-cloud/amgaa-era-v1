@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as N from '../public/norms.js';
-import { normsChat, checkAnswer, NOT_FOUND, cleanExcerpts } from '../lib/agent/chat.js';
+import { normsChat, checkAnswer, NOT_FOUND, cleanExcerpts, plainMath } from '../lib/agent/chat.js';
 import { normsFrom } from '../api/agent.js';
 
 const TEXT = `ЦАХИЛГААН БАЙГУУЛАМЖИЙН ДҮРЭМ (туршилтын текст)
@@ -101,4 +101,33 @@ test('апп-тай хамт ирэх ЦБД: 1423 заалт, ү/ө зөв', as
   const j = JSON.parse(fs.readFileSync(new URL('../public/norms/' + e.file, import.meta.url)));
   assert.equal(new Set(j.chunks.map((c) => c.section)).size, 1423);
   assert.ok(!j.chunks.some((c) => /[їє]/i.test(c.content)));
+});
+
+test('plainMath: LaTeX томьёог энгийн текст болгоно, мөнгөн дүнд хүрэхгүй', () => {
+  assert.equal(plainMath('Томьёо: $R = 125 / I$ [§1.7.62]'), 'Томьёо: R = 125 / I [§1.7.62]');
+  assert.equal(plainMath('$$R \\le \\frac{125}{I_{\\text{з}}}$$'), 'R ≤ 125 / Iз');
+  assert.equal(plainMath('$U = I \\cdot R$, 4 $\\Omega$'), 'U = I · R, 4 Ω');
+  assert.equal(plainMath('Үнэ $5 ба $10'), 'Үнэ $5 ба $10');
+});
+
+test('normsChat (Gemini): thinking бага, temperature-гүй, LaTeX цэвэрлэнэ', async () => {
+  const bodies = [];
+  const fetchFn = async (url, o) => { bodies.push(JSON.parse(o.body)); return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: 'Эсэргүүцэл $R \\le 4$ Ом [§2.1.5].' }] } }] }) }; };
+  const r = await normsChat({ question: 'Газардуулга?', excerpts: [{ section: '2.1.5', content: 'Газардуулгын эсэргүүцэл 4 Ом-оос ихгүй.' }], provider: 'gemini', env: { GEMINI_API_KEY: 'k' }, fetchFn });
+  assert.equal(r.answer, 'Эсэргүүцэл R ≤ 4 Ом [§2.1.5].');
+  assert.equal(bodies[0].generationConfig.thinkingConfig.thinkingLevel, 'low');
+  assert.equal(bodies[0].generationConfig.temperature, undefined);
+  assert.ok(r.grounded);
+});
+
+test('normsChat (Gemini): загвар thinkingLevel-ийг танихгүй бол түүнгүйгээр дахин оролдоно', async () => {
+  const bodies = [];
+  const fetchFn = async (url, o) => {
+    const b = JSON.parse(o.body); bodies.push(b);
+    if (b.generationConfig.thinkingConfig) return { ok: false, status: 400, json: async () => ({ error: { message: 'Unknown name "thinkingLevel"' } }) };
+    return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: '4 Ом [§2.1.5].' }] } }] }) };
+  };
+  const r = await normsChat({ question: 'Газардуулга?', excerpts: [{ section: '2.1.5', content: '4 Ом' }], provider: 'gemini', env: { GEMINI_API_KEY: 'k' }, fetchFn });
+  assert.equal(bodies.length, 2);
+  assert.equal(r.answer, '4 Ом [§2.1.5].');
 });
