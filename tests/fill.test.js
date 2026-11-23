@@ -24,7 +24,8 @@ test('prompt-д мөрийн дугаар, тайлбар орно', () => {
   assert.match(u, /0\. \[Самбар\] Самбар төмөр хийцтэй/);
   assert.match(u, /Хүчдэл: 400 В/);
   assert.match(u, /Самбарын хаалга түгжээгүй$/);
-  assert.match(FILL_SYSTEM, /огт буцаахгүй/);
+  assert.match(FILL_SYSTEM, /БҮХ мөрийг заавал/);
+  assert.match(FILL_SYSTEM, /clarify болгож/);
 });
 
 test('Gemini-ээр бөглөнө (JSON горимтой)', async () => {
