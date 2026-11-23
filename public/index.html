@@ -348,6 +348,11 @@
   .ph .img img { width:100%; height:100%; object-fit:contain; display:block; }
   .ph .img .no { position:absolute; left:8px; top:8px; font-size:11px; font-weight:800; padding:1px 8px; border-radius:999px; background:rgba(3,6,18,.75); border:1px solid var(--line); }
   .ph .body { padding:8px; display:grid; gap:6px; }
+  .ph .img .vb { position:absolute; right:8px; top:8px; font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px; border:1px solid; }
+  .ph .img .vb.bad { color:#fecaca; background:rgba(127,29,29,.85); border-color:var(--err); box-shadow:0 0 12px rgba(248,113,113,.5); }
+  .ph .img .vb.ok { color:#bbf7d0; background:rgba(6,78,59,.85); border-color:var(--ok); }
+  .ph.bad { border-color:rgba(248,113,113,.55); }
+  .ph .vf { margin:0; padding-left:16px; font-size:12px; color:#fecaca; } .ph .vf li { margin:2px 0; } .ph .vf li b { color:var(--warn); } .ph .vf li.hi b { color:var(--err); }
   .ph input, .ph select { padding:6px 8px; font-size:13px; }
   .ph .row { display:flex; gap:6px; align-items:center; justify-content:space-between; font-size:12.5px; color:var(--muted); }
   .ph .row label { display:flex; gap:6px; align-items:center; margin:0; cursor:pointer; white-space:nowrap; } .ph .row > span { display:flex; gap:6px; }
@@ -519,6 +524,17 @@
         <b>Фолдероос:</b> "📁 Фолдер сонгох" дарж үзлэгийн зургийн фолдероо сонгох эсвэл фолдерыг энд чирж оруулна — доторх бүх зураг, PDF (дэд фолдерууд ч) нэр дарааллаар орно. Өмнө оруулсан файлыг давхардуулахгүй.</span>
     </div>
     <div id="fileMsg"></div>
+    <div class="story">
+      <h3>🔍 AI зураг шинжилгээ <span class="muted">Зураг бүрээс цахилгааны үл тохирлыг илрүүлж, тайлбарыг нь бөглөнө</span></h3>
+      <div class="row">
+        <button type="button" id="visRun">🔍 Зургуудаас үл тохирол илрүүлэх</button>
+        <button type="button" class="sec hidden" id="visStop">■ Зогсоох</button>
+        <label class="chk"><input type="checkbox" id="visAll"> Шинжилсэн зургийг ч дахин шинжлэх</label>
+        <label class="chk"><input type="checkbox" id="visOnlyBad"> Зөвхөн үл тохиролтой зургийг харуулах</label>
+      </div>
+      <p class="muted" style="margin:8px 0 0;font-size:12.5px">AI зөвхөн зурган дээр ил харагдаж буй зүйлийг дүгнэнэ. Хоосон тайлбартай зурагт AI-ийн тайлбар бичигдэнэ. Илэрсэн үл тохирлыг нэг товчоор шалгах хуудсанд тусгаж болно. Үр дүнг заавал хянана уу.</p>
+      <div id="visMsg"></div>
+    </div>
     <h3 id="phHead">Зураг</h3>
     <div class="phgrid" id="phList"></div>
     <h3 id="docHead">PDF баримт</h3>
@@ -1022,7 +1038,7 @@ function resetForm() {
   document.querySelectorAll('main input, main textarea').forEach((e) => { if (e.id !== 'f_code') e.value = ''; });
   document.querySelectorAll('.ck select').forEach((s) => { s.value = 'not_checked'; s.closest('.ck').querySelector('.note').value = ''; delete s.closest('.ck').dataset.ai; syncCk(s.closest('.ck')); });
   document.querySelectorAll('.ind').forEach((r) => { r.dataset.manual = ''; });
-  ckUndo = null; $('aiUndo').classList.add('hidden'); $('aiFillMsg').innerHTML = ''; $('aiKeep').checked = false;
+  ckUndo = null; $('aiUndo').classList.add('hidden'); $('aiFillMsg').innerHTML = ''; $('aiKeep').checked = false; $('visMsg').innerHTML = ''; visStop = true;
   $('meas').innerHTML = ''; addMeas(); autoScores();
   $('f_date').value = new Date().toISOString().slice(0, 10);
   $('formMsg').innerHTML = ''; $('agentStatus').innerHTML = ''; $('log').innerHTML = '';
@@ -1770,15 +1786,19 @@ function renderFiles() {
   const ph = photos(), dc = pdfs();
   $('phHead').textContent = `Зураг (${ph.length})`;
   $('docHead').textContent = `PDF баримт (${dc.length})`;
-  $('phList').innerHTML = ph.length ? ph.map((f, i) => `
-    <div class="ph${f.inReport ? '' : ' off'}" data-id="${f.id}" style="animation-delay:${(i * .04).toFixed(2)}s">
-      <div class="img" data-act="zoom"><img src="${thumb(f)}" alt="${esc(f.caption || f.name)}" loading="lazy"><span class="no">Зураг ${i + 1}</span></div>
+  const onlyBad = $('visOnlyBad')?.checked;
+  const shown = ph.map((f, i) => [f, i]).filter(([f]) => !onlyBad || (f.ai && f.ai.findings.length));
+  $('phList').innerHTML = shown.length ? shown.map(([f, i]) => { const bad = f.ai && f.ai.findings.length; return `
+    <div class="ph${f.inReport ? '' : ' off'}${bad ? ' bad' : ''}" data-id="${f.id}" style="animation-delay:${(Math.min(i, 20) * .04).toFixed(2)}s">
+      <div class="img" data-act="zoom"><img src="${thumb(f)}" alt="${esc(f.caption || f.name)}" loading="lazy"><span class="no">Зураг ${i + 1}</span>${f.ai ? (bad ? `<span class="vb bad">⚠ ${f.ai.findings.length} үл тохирол</span>` : '<span class="vb ok">✓ Илрээгүй</span>') : ''}</div>
       <div class="body">
         <input data-f="caption" placeholder="Тайлбар: юу харагдаж байна?" value="${esc(f.caption)}">
+        ${bad ? `<ul class="vf">${f.ai.findings.map((x) => `<li class="${x.severity === 'Өндөр' ? 'hi' : ''}"><b>${esc(x.severity)}:</b> ${esc(x.issue)}</li>`).join('')}</ul>` : ''}
         <select data-f="ind">${indOpts(f.ind)}</select>
         <div class="row"><label><input type="checkbox" data-f="inReport"${f.inReport ? ' checked' : ''}> Тайланд оруулах</label>
           <span><button class="mini sec" data-act="dl" title="Татах">⬇</button> <button class="mini del" data-act="del" title="Устгах">✕</button></span></div>
-      </div></div>`).join('') : '<div class="emptyf">Зураг оруулаагүй байна.</div>';
+      </div></div>`; }).join('') : `<div class="emptyf">${ph.length ? 'Үл тохиролтой зураг алга.' : 'Зураг оруулаагүй байна.'}</div>`;
+  if (!visBusy && !$('visMsg').innerHTML && ph.some((f) => f.ai)) visSummary();
   $('docList').innerHTML = dc.length ? dc.map((f, i) => `
     <div class="doc" data-id="${f.id}" style="animation-delay:${(i * .04).toFixed(2)}s"><span class="pdf">PDF</span>
       <div class="nm"><b>${esc(f.name)}</b><div class="muted">${EraFiles.size(f.size)} · ${esc(f.created.slice(0, 10))}</div></div>
@@ -1847,6 +1867,94 @@ async function entryFiles(entry, path = '') {
     addFolder(files, dirs.map((x) => x.name).join(', '));
   });
 }
+// ================= AI зураг шинжилгээ (/api/vision) =================
+var visStop = false, visBusy = false;   // var: resetForm эхэнд дуудагдаж болох тул
+const ckRows = () => [...document.querySelectorAll('.ck')];
+async function smallJpeg(blob, max = 1024) {
+  const u = URL.createObjectURL(blob);
+  try {
+    const im = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('зураг уншигдсангүй')); i.src = u; });
+    const k = Math.min(1, max / Math.max(im.naturalWidth, im.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.naturalWidth * k)); c.height = Math.max(1, Math.round(im.naturalHeight * k));
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.82).split(',')[1];
+  } finally { URL.revokeObjectURL(u); }
+}
+async function visOne(f, items) {
+  const image = await smallJpeg(f.blob);
+  let r, out;
+  for (let k = 0; k < 2; k++) {                     // түр зуурын алдаанд нэг удаа дахин оролдоно
+    r = await fetch('/api/vision', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-access-code': $('f_code').value },
+      body: JSON.stringify({ image, mime: 'image/jpeg', items, object: { name: $('f_name').value.trim(), equipment: $('f_eq').value.trim() } }) });
+    out = await r.json().catch(() => ({ error: 'Серверийн хариу уншигдсангүй' }));
+    if (r.ok || r.status < 500) break;
+  }
+  if (!r.ok) throw new Error(out.error || 'Алдаа ' + r.status);
+  const rows = ckRows();
+  const ai = { at: nowIso(), caption: out.caption || '',
+    findings: (out.findings || []).map((x) => ({ ...x, item: (rows[x.i] && rows[x.i].dataset.item) || '', ind: (rows[x.i] && rows[x.i].dataset.ind) || '' })) };
+  const patch = { ai };
+  if (!f.caption && ai.caption) patch.caption = ai.caption;
+  if (!f.ind) { const w = ai.findings.find((x) => x.ind); if (w) patch.ind = w.ind; }
+  Object.assign(f, patch);
+  await EraFiles.update(f.id, patch);
+}
+$('visRun').onclick = async () => {
+  const list = photos().filter((f) => $('visAll').checked || !f.ai);
+  if (!list.length) { visSummary(); return; }
+  const items = ckRows().map((x) => ({ group: x.dataset.group, item: x.dataset.item }));
+  const insp = currentId, q = [...list], errs = [];
+  let done = 0, fail = 0;
+  visStop = false; visBusy = true; $('visRun').disabled = true; $('visStop').classList.remove('hidden');
+  const tick = () => { $('visMsg').innerHTML = `<div class="loader"><span class="orb"></span><span>Зураг шинжилж байна… ${done + fail}/${list.length}${fail ? ` (${fail} алдаа)` : ''}</span></div>`; };
+  tick();
+  let rt;
+  await Promise.all([0, 1, 2].map(async () => {
+    while (q.length && !visStop && insp === currentId) {
+      const f = q.shift();
+      try { await visOne(f, items); done++; } catch (e) { fail++; if (errs.length < 3) errs.push(`${f.name}: ${e.message}`); }
+      tick();
+      clearTimeout(rt); rt = setTimeout(() => { if (document.querySelector('.view.active')?.dataset.view === 'files') renderFiles(); }, 300);
+    }
+  }));
+  visBusy = false; $('visRun').disabled = false; $('visStop').classList.add('hidden');
+  if (insp === currentId) { renderFiles(); visSummary(errs, fail, visStop); }
+};
+$('visStop').onclick = () => { visStop = true; };
+$('visOnlyBad').onchange = () => renderFiles();
+function visSummary(errs = [], fail = 0, stopped = false) {
+  const ph = photos(), seen = ph.filter((f) => f.ai), bad = seen.filter((f) => f.ai.findings.length);
+  const nF = bad.reduce((a, f) => a + f.ai.findings.length, 0);
+  const hi = bad.reduce((a, f) => a + f.ai.findings.filter((x) => x.severity === 'Өндөр').length, 0);
+  const left = ph.length - seen.length;
+  const byRow = new Map();
+  bad.forEach((f) => { const no = ph.indexOf(f) + 1;
+    f.ai.findings.forEach((x) => { if (!x.item) return;
+      if (!byRow.has(x.item)) byRow.set(x.item, { item: x.item, status: 'partial', notes: [] });
+      const g = byRow.get(x.item); if (x.status === 'violation') g.status = 'violation';
+      g.notes.push(`Зураг ${no}: ${x.issue}`); }); });
+  if (!seen.length && !fail) { $('visMsg').innerHTML = ''; return; }
+  $('visMsg').innerHTML = `<div class="msg ${bad.length ? 'warn' : 'ok'}"><b>${seen.length}/${ph.length} зураг шинжлэгдсэн.</b> ${bad.length} зурагт нийт ${nF} үл тохирол илэрсэн${hi ? ` (<b>${hi}</b> нь өндөр эрсдэлтэй)` : ''}.`
+    + `${left ? ` ${left} зураг шинжлэгдээгүй${stopped ? ' (зогсоосон)' : ''} — товчийг дахин дарвал үргэлжилнэ.` : ''}`
+    + `${fail ? `<br>Алдаа (${fail}): ${errs.map(esc).join('; ')}` : ''}`
+    + `${byRow.size ? `<br>Шалгах хуудасны <b>${byRow.size}</b> мөрт хамаарна. <button type="button" class="mini" id="visApply">✅ Шалгах хуудсанд тусгах</button>` : ''}</div>`;
+  if (byRow.size) $('visApply').onclick = () => visApply([...byRow.values()]);
+}
+function visApply(groups) {
+  const rows = ckRows(), rank = { not_checked: 0, na: 0, ok: 1, clarify: 1, partial: 2, violation: 3 };
+  let n = 0;
+  groups.forEach((g) => {
+    const row = rows.find((r) => r.dataset.item === g.item); if (!row) return;
+    const sel = row.querySelector('select'), note = row.querySelector('.note');
+    if ((rank[g.status] || 0) > (rank[sel.value] || 0)) sel.value = g.status;
+    const add = g.notes.filter((t) => !note.value.includes(t));
+    if (add.length) note.value = [note.value.trim(), ...add].filter(Boolean).join('; ');
+    row.dataset.ai = '1'; syncCk(row); n++;
+  });
+  autoScores(); saveDraft(); updateStatus();
+  $('visMsg').insertAdjacentHTML('beforeend', `<div class="msg ok">Шалгах хуудасны ${n} мөрт зургийн үл тохирлыг тусгалаа: төлөвийг зөвхөн чангаруулсан (жишээ нь Хэвийн → Зөрчилтэй), тайлбарт "Зураг N: …" нэмсэн. <span class="lnk" onclick="go('checklist')">Шалгах хуудас руу очих →</span></div>`);
+}
+
 let capT;
 document.addEventListener('input', (e) => {
   const el = e.target.closest('.ph [data-f="caption"]'); if (!el) return;

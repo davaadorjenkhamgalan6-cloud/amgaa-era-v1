@@ -6,6 +6,9 @@
     },
     "api/fill.js": {
       "maxDuration": 60
+    },
+    "api/vision.js": {
+      "maxDuration": 60
     }
   }
 }
