@@ -15,6 +15,10 @@ test('зөвшөөрөгдсөн мөр, төлөвийг л үлдээнэ', ()
   assert.equal(out.summary, 'Самбар');
 });
 
+test('«Тодруулах» гэж ирвэл «Хэсэгчлэн» болгоно', () => {
+  assert.deepEqual(parseFill('{"items":[{"i":0,"s":"clarify","n":"Акт байхгүй"}]}', 2).items, [{ i: 0, status: 'partial', note: 'Акт байхгүй' }]);
+});
+
 test('JSON биш хариуг алдаа гэж үзнэ', () => {
   assert.throws(() => parseFill('уучлаарай', 3), /JSON/);
 });
@@ -25,7 +29,7 @@ test('prompt-д мөрийн дугаар, тайлбар орно', () => {
   assert.match(u, /Хүчдэл: 400 В/);
   assert.match(u, /Самбарын хаалга түгжээгүй$/);
   assert.match(FILL_SYSTEM, /БҮХ мөрийг заавал/);
-  assert.match(FILL_SYSTEM, /clarify болгож/);
+  assert.match(FILL_SYSTEM, /partial \(Хэсэгчлэн\) болгож/);
 });
 
 test('Gemini-ээр бөглөнө (JSON горимтой)', async () => {
