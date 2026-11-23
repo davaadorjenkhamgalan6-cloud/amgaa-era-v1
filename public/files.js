@@ -54,6 +54,8 @@
   }
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const jpgName = (n) => n.replace(/\.[^.]+$/, '') + '.jpg';
+  // Эх файлын түлхүүр — нэг фолдерыг дахин сонгоход давхардуулахгүйн тулд
+  const srcKey = (file) => `${file.__path || file.webkitRelativePath || file.name}|${file.size}|${file.lastModified || 0}`;
 
   // Файлуудыг (зураг/PDF) нэмнэ. Буцаах: { added: [...], errors: [...] }
   async function add(insp, files, startOrder = 0) {
@@ -64,12 +66,12 @@
         const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
         if (isPdf) {
           if (file.size > MAX_PDF) throw new Error(`${file.name}: 20 МБ-аас том PDF оруулах боломжгүй`);
-          const f = { id: uid(), insp, kind: 'pdf', name: file.name, type: 'application/pdf', size: file.size, blob: file, created: new Date().toISOString(), order: order++ };
+          const f = { id: uid(), insp, kind: 'pdf', name: file.name, type: 'application/pdf', size: file.size, blob: file, created: new Date().toISOString(), order: order++, src: srcKey(file) };
           await put(f); added.push(f);
         } else if (/^image\//.test(file.type) || /\.(jpe?g|png|webp|gif|bmp)$/i.test(file.name)) {
           const { blob, w, h } = await shrink(file);
           const f = { id: uid(), insp, kind: 'photo', name: jpgName(file.name), type: 'image/jpeg', size: blob.size, w, h, blob,
-            caption: '', ind: '', inReport: true, created: new Date().toISOString(), order: order++ };
+            caption: '', ind: '', inReport: true, created: new Date().toISOString(), order: order++, src: srcKey(file) };
           await put(f); added.push(f);
         } else throw new Error(`${file.name}: зөвхөн зураг (JPG, PNG) эсвэл PDF оруулна`);
       } catch (e) { errors.push(e.message); }
@@ -126,5 +128,5 @@
     return out;
   }
 
-  root.EraFiles = { add, list, get, update, remove: del, removeInsp, download, bytes, dataUrl, size, zip, crc32 };
+  root.EraFiles = { add, srcKey, list, get, update, remove: del, removeInsp, download, bytes, dataUrl, size, zip, crc32 };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -513,8 +513,10 @@
       <div class="actions">
         <label class="fbtn">📷 Зураг оруулах<input type="file" id="inPhoto" accept="image/*" multiple></label>
         <label class="fbtn sec">📎 PDF оруулах<input type="file" id="inPdf" accept="application/pdf,.pdf" multiple></label>
+        <label class="fbtn sec" title="Фолдер доторх бүх зураг, PDF-ийг нэг дор оруулна">📁 Фолдер сонгох<input type="file" id="inDir" webkitdirectory directory multiple></label>
       </div>
-      <span class="muted">Зураг: JPG, PNG — автоматаар багасгана (урт тал 1600 px). PDF: 20 МБ хүртэл. Утаснаас бол камераар шууд авч болно.</span>
+      <span class="muted">Зураг: JPG, PNG — автоматаар багасгана (урт тал 1600 px). PDF: 20 МБ хүртэл. Утаснаас бол камераар шууд авч болно.<br>
+        <b>Фолдероос:</b> "📁 Фолдер сонгох" дарж үзлэгийн зургийн фолдероо сонгох эсвэл фолдерыг энд чирж оруулна — доторх бүх зураг, PDF (дэд фолдерууд ч) нэр дарааллаар орно. Өмнө оруулсан файлыг давхардуулахгүй.</span>
     </div>
     <div id="fileMsg"></div>
     <h3 id="phHead">Зураг</h3>
@@ -1796,11 +1798,54 @@ async function addFiles(list) {
 const list_ = (a) => list(a);
 $('inPhoto').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
 $('inPdf').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
+
+// ---- Фолдероос оруулах: зураг, PDF-ийг шүүж, нэрээр эрэмбэлж, өмнө оруулсныг алгасна ----
+const isAttach = (f) => /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|bmp|pdf)$/i.test(f.name) || f.type === 'application/pdf';
+const relPath = (f) => f.__path || f.webkitRelativePath || f.name;
+async function addFolder(files, folder) {
+  const all = [...files], ok = all.filter(isAttach);
+  const have = new Set(att.map((f) => f.src).filter(Boolean));
+  const fresh = ok.filter((f) => !have.has(EraFiles.srcKey(f)))
+    .sort((a, b) => relPath(a).localeCompare(relPath(b), undefined, { numeric: true, sensitivity: 'base' }));
+  const skipped = all.length - ok.length, dup = ok.length - fresh.length;
+  if (!fresh.length) {
+    fileMsg(`<div class="msg warn">${folder ? `«${esc(folder)}» фолдероос ` : ''}шинэ зураг, PDF олдсонгүй.${dup ? ` ${dup} файл өмнө нь орсон байна.` : ''}${skipped ? ` Зураг, PDF биш ${skipped} файлыг алгаслаа.` : ''}</div>`);
+    return;
+  }
+  await addFiles(fresh);
+  const note = [folder && `«${esc(folder)}» фолдероос`, dup && `өмнө орсон ${dup} файлыг давхардуулаагүй`, skipped && `зураг, PDF биш ${skipped} файлыг алгассан`].filter(Boolean).join(', ');
+  if (note) $('fileMsg').insertAdjacentHTML('beforeend', `<div class="msg ok" style="margin-top:6px">${note}.</div>`);
+}
+$('inDir').addEventListener('change', (e) => {
+  const fs = e.target.files, first = fs[0];
+  addFolder(fs, first && first.webkitRelativePath ? first.webkitRelativePath.split('/')[0] : '');
+  e.target.value = '';
+});
+// Чирж оруулсан фолдерын бүх файлыг (дэд фолдер оролцуулан) уншина
+async function entryFiles(entry, path = '') {
+  if (entry.isFile) return new Promise((res) => entry.file((f) => { try { f.__path = path + f.name; } catch {} res([f]); }, () => res([])));
+  if (!entry.isDirectory) return [];
+  const reader = entry.createReader(), out = [];
+  for (;;) {
+    const batch = await new Promise((res) => reader.readEntries(res, () => res([])));
+    if (!batch.length) break;
+    for (const e of batch) out.push(...await entryFiles(e, path + entry.name + '/'));
+  }
+  return out;
+}
 {
   const d = $('drop');
   ['dragenter', 'dragover'].forEach((t) => d.addEventListener(t, (e) => { e.preventDefault(); d.classList.add('over'); }));
   ['dragleave', 'drop'].forEach((t) => d.addEventListener(t, (e) => { e.preventDefault(); d.classList.remove('over'); }));
-  d.addEventListener('drop', (e) => addFiles(e.dataTransfer.files));
+  d.addEventListener('drop', async (e) => {
+    const entries = [...(e.dataTransfer.items || [])].map((it) => it.webkitGetAsEntry && it.webkitGetAsEntry()).filter(Boolean);
+    const dirs = entries.filter((x) => x.isDirectory);
+    if (!dirs.length) return addFiles(e.dataTransfer.files);
+    fileMsg('<div class="loader"><span class="orb"></span><span>Фолдер уншиж байна…</span></div>');
+    const files = [];
+    for (const en of entries) files.push(...await entryFiles(en));
+    addFolder(files, dirs.map((x) => x.name).join(', '));
+  });
 }
 let capT;
 document.addEventListener('input', (e) => {
