@@ -1,6 +1,11 @@
 {
   "outputDirectory": "public",
   "functions": {
-    "api/agent.js": { "maxDuration": 60 }
+    "api/agent.js": {
+      "maxDuration": 60
+    },
+    "api/fill.js": {
+      "maxDuration": 60
+    }
   }
 }

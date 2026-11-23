@@ -94,6 +94,14 @@
   .group > div:first-child { padding:9px 12px; font-weight:700; font-size:13px; letter-spacing:.4px; color:#c7d2fe;
                              background:linear-gradient(90deg, rgba(79,140,255,.18), rgba(139,92,246,.06)); border-bottom:1px solid var(--line); }
   .ck { display:grid; grid-template-columns:1fr 160px; gap:6px 10px; padding:9px 12px; border-bottom:1px solid var(--line); align-items:center; transition:background .3s; }
+  .story { border:1px solid rgba(139,92,246,.45); border-radius:12px; padding:12px 14px; margin-top:12px; background:linear-gradient(135deg, rgba(139,92,246,.14), rgba(79,140,255,.05)); }
+  .story h3 { margin:0 0 6px; font-size:15px; } .story h3 .muted { font-weight:400; font-size:13px; }
+  .story details { font-size:13px; margin-bottom:8px; } .story summary { cursor:pointer; color:#c7d2fe; }
+  .story ul { margin:6px 0; padding-left:18px; } .story li { margin:3px 0; } .story details p { margin:6px 0 0; }
+  .story .row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:10px; } .story .row button { width:auto; }
+  label.chk { display:inline-flex; gap:6px; align-items:center; font-size:13px; margin:0; cursor:pointer; } label.chk input { width:auto; }
+  .aitag, .ck.ai > span::after { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.5px; padding:1px 6px; border-radius:999px; color:#e9d5ff; background:rgba(139,92,246,.35); border:1px solid rgba(139,92,246,.6); vertical-align:middle; }
+  .ck.ai > span::after { content:'AI'; margin-left:8px; }
   .ck:last-child { border-bottom:0; } .ck:hover { background:rgba(79,140,255,.06); }
   .ck .note { grid-column:1 / -1; display:none; } .ck.show-note .note { display:block; animation:fadeUp .35s both; }
   .ck.violation select { border-color:var(--err); color:var(--err); box-shadow:0 0 12px rgba(248,113,113,.35); }
@@ -449,6 +457,28 @@
   <section class="view card no-print" data-view="checklist">
     <h2><span class="n">2</span>Шалгах хуудас</h2>
     <p class="muted" style="margin:0">Мөр бүрийн хариултаас 15 үзүүлэлтийн оноо автоматаар гарна: Хэвийн = 10, Хэсэгчлэн = 5, Зөрчилтэй = 0 (дундажийг авна). "Хамааралгүй" мөрийг тооцохгүй. "Хэсэгчлэн", "Зөрчилтэй", "Тодруулах" сонговол тайлбар бичнэ.</p>
+    <div class="story">
+      <h3>✍ Үзлэг хэрхэн явагдсан бэ? <span class="muted">Тайлбараа бичвэл AI доорх шалгах хуудсыг бөглөнө</span></h3>
+      <details>
+        <summary>Хэрхэн бичих вэ? (заавар)</summary>
+        <ul>
+          <li>Үзсэн дарааллаараа энгийн үгээр бичнэ: самбар, кабель, газардуулга, автомат таслуур/RCD, аянга хамгаалалт, залгуур, уртасгагч, ажилтан гэх мэт.</li>
+          <li>Зөрчил бүрийг <b>хаана, хэдэн ширхэг, ямар байдалтай</b> байсныг тодорхой бичнэ. Жишээ: "2-р давхрын самбарын хаалга түгжээгүй, схем байхгүй".</li>
+          <li><b>Хэвийн</b> байсан зүйлсийг ч дурдана. Бүгдийг үзсэн бол төгсгөлд нь "бусад нь хэвийн" гэж бичнэ.</li>
+          <li>Объектод <b>хамаарахгүй</b> зүйлийг хэлнэ. Жишээ: "нэг давхар барилга, галын дохиолол шаардлагагүй".</li>
+          <li>Баримт бичгийг дурдана: газардуулгын акт, протокол, цахилгаанчны үнэмлэх байсан эсэх, хүчинтэй эсэх.</li>
+          <li>Тодорхойгүй зүйлийг "тодруулах" гэж бичнэ. Жишээ: "SPD байгаа эсэх тодорхойгүй".</li>
+        </ul>
+        <p class="muted">Тайлбарт дурдаагүй мөр "Шалгаагүй" хэвээр үлдэнэ. AI бөглөсөн мөр бүр <span class="aitag">AI</span> тэмдэгтэй тул хянаж, шаардлагатай бол гараар засна уу.</p>
+      </details>
+      <textarea id="f_story" rows="6" placeholder="Жишээ: Үндсэн самбар 1-р давхарт, хаалга түгжээгүй, схем тэмдэглэгээгүй. Залгуурын шугамд RCD байхгүй. Гаргалгааны кабелийн тусгаарлагч 2 цэгт гэмтэлтэй. Газардуулгын акт 2025 оных, хүчинтэй. Оффист уртасгагч байнга ашиглаж байна. Нэг давхар барилга тул Fireman switch шаардлагагүй. Бусад нь хэвийн."></textarea>
+      <div class="row">
+        <button type="button" id="aiFill">⚡ AI-аар шалгах хуудсыг бөглөх</button>
+        <button type="button" class="sec hidden" id="aiUndo">↶ Буцаах</button>
+        <label class="chk"><input type="checkbox" id="aiOverwrite"> Өмнө бөглөсөн мөрийг ч дарж бичих</label>
+      </div>
+      <div id="aiFillMsg"></div>
+    </div>
     <div id="checklist"></div>
     <div class="navrow"><button class="back" onclick="go('object')">← Объектын мэдээлэл</button><button onclick="go('scores')">Дараах: 15 үзүүлэлт →</button></div>
   </section>
@@ -780,10 +810,55 @@ $('checklist').innerHTML = Object.entries(CHECKLIST).map(([no, items]) => `
         <input class="note" placeholder="Юу ажиглагдсан бэ? (тайлбар)">
       </div>`; }).join('')}
   </div>`).join('');
-document.querySelectorAll('.ck select').forEach((s) => s.addEventListener('change', () => { syncCk(s.closest('.ck')); autoScores(); }));
+document.querySelectorAll('.ck select').forEach((s) => s.addEventListener('change', () => { delete s.closest('.ck').dataset.ai; syncCk(s.closest('.ck')); autoScores(); }));
+
+// ================= AI-аар шалгах хуудас бөглөх =================
+// Инженерийн "үзлэг хэрхэн явагдсан" тайлбараас /api/fill мөр бүрийн төлөв, тайлбарыг санал болгоно.
+let ckUndo = null;
+$('aiFill').onclick = async () => {
+  const desc = $('f_story').value.trim(), msg = $('aiFillMsg'), btn = $('aiFill');
+  if (desc.length < 30) { msg.innerHTML = '<div class="msg warn">Үзлэгийн тайлбараа дэлгэрэнгүй бичнэ үү (дор хаяж 1–2 өгүүлбэр). "Хэрхэн бичих вэ?" зааврыг харна уу.</div>'; return; }
+  const rows = [...document.querySelectorAll('.ck')], over = $('aiOverwrite').checked;
+  btn.disabled = true;
+  msg.innerHTML = '<div class="loader"><span class="orb"></span><span>AI тайлбарыг уншиж, шалгах хуудсыг бөглөж байна…</span></div>';
+  try {
+    const r = await fetch('/api/fill', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-access-code': $('f_code').value },
+      body: JSON.stringify({ description: desc, items: rows.map((x) => ({ group: x.dataset.group, item: x.dataset.item })),
+        object: { name: $('f_name').value.trim(), equipment: $('f_eq').value.trim(), voltage: $('f_v').value } }) });
+    const out = await r.json().catch(() => ({ error: 'Серверийн хариу уншигдсангүй (хугацаа хэтэрсэн байж магадгүй)' }));
+    if (!r.ok) throw new Error(out.error || 'Алдаа ' + r.status);
+    ckUndo = rows.map((x) => [x.querySelector('select').value, x.querySelector('.note').value]);
+    let n = 0, kept = 0;
+    for (const x of out.items || []) {
+      const row = rows[x.i]; if (!row) continue;
+      const sel = row.querySelector('select');
+      if (!over && sel.value !== 'not_checked') { kept++; continue; }
+      sel.value = x.status; row.querySelector('.note').value = x.note || ''; row.dataset.ai = '1'; syncCk(row); n++;
+    }
+    autoScores(); saveDraft(); updateStatus();
+    const left = rows.filter((x) => x.querySelector('select').value === 'not_checked').length;
+    const cnt = (st) => rows.filter((x) => x.dataset.ai === '1' && x.querySelector('select').value === st).length;
+    $('aiUndo').classList.toggle('hidden', !n);
+    msg.innerHTML = `<div class="msg ${left ? 'warn' : 'ok'}"><b>AI ${n} мөр бөглөлөө:</b> Зөрчилтэй ${cnt('violation')}, Хэсэгчлэн ${cnt('partial')}, Тодруулах ${cnt('clarify')}, Хэвийн ${cnt('ok')}, Хамааралгүй ${cnt('na')}.`
+      + `${kept ? ` Өмнө бөглөсөн ${kept} мөрийг өөрчлөөгүй.` : ''}`
+      + `${left ? ` <b>${left} мөр "Шалгаагүй" үлдсэн</b> — тайлбарт дурдаагүй тул гараар бөглөнө үү.` : ''}`
+      + ` <span class="aitag">AI</span> тэмдэгтэй мөрүүдийг хянаад шаардлагатай бол засна уу.`
+      + `${out.summary ? `<br><b>Гол эрсдэл:</b> ${esc(out.summary)}` : ''}</div>`;
+  } catch (e) {
+    msg.innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
+  } finally { btn.disabled = false; }
+};
+$('aiUndo').onclick = () => {
+  if (!ckUndo) return;
+  document.querySelectorAll('.ck').forEach((r, i) => { const [st, note] = ckUndo[i] || ['not_checked', ''];
+    r.querySelector('select').value = st; r.querySelector('.note').value = note; delete r.dataset.ai; syncCk(r); });
+  ckUndo = null; $('aiUndo').classList.add('hidden');
+  $('aiFillMsg').innerHTML = '<div class="msg ok">AI-ийн бөглөлтийг буцаалаа.</div>';
+  autoScores(); saveDraft(); updateStatus();
+};
 function syncCk(row) {
   const v = row.querySelector('select').value;
-  row.className = 'ck ' + v + (v === 'violation' || v === 'clarify' || v === 'partial' ? ' show-note' : '');
+  row.className = 'ck ' + v + (v === 'violation' || v === 'clarify' || v === 'partial' ? ' show-note' : '') + (row.dataset.ai === '1' ? ' ai' : '');
 }
 
 // Шалгах хуудаснаас үзүүлэлтийн автомат оноо.
@@ -869,6 +944,7 @@ function collect() {
     measurements: [...document.querySelectorAll('#meas .meas')].map((r) => { const i = r.querySelectorAll('input');
       return { name: i[0].value.trim(), value: i[1].value === '' ? null : Number(i[1].value), unit: i[2].value.trim(), limit_text: i[3].value.trim() }; }).filter((m) => m.name),
     observations: $('f_obs').value.trim(),
+    inspection_story: $('f_story').value.trim(),
   };
 }
 
@@ -934,8 +1010,9 @@ $('fill').onclick = () => {
 };
 function resetForm() {
   document.querySelectorAll('main input, main textarea').forEach((e) => { if (e.id !== 'f_code') e.value = ''; });
-  document.querySelectorAll('.ck select').forEach((s) => { s.value = 'not_checked'; s.closest('.ck').querySelector('.note').value = ''; syncCk(s.closest('.ck')); });
+  document.querySelectorAll('.ck select').forEach((s) => { s.value = 'not_checked'; s.closest('.ck').querySelector('.note').value = ''; delete s.closest('.ck').dataset.ai; syncCk(s.closest('.ck')); });
   document.querySelectorAll('.ind').forEach((r) => { r.dataset.manual = ''; });
+  ckUndo = null; $('aiUndo').classList.add('hidden'); $('aiFillMsg').innerHTML = ''; $('aiOverwrite').checked = false;
   $('meas').innerHTML = ''; addMeas(); autoScores();
   $('f_date').value = new Date().toISOString().slice(0, 10);
   $('formMsg').innerHTML = ''; $('agentStatus').innerHTML = ''; $('log').innerHTML = '';
@@ -970,7 +1047,7 @@ function applyData(d) {
   if (!d) return;
   const set = (id, v) => { if (v !== undefined && v !== null && v !== '') $(id).value = v; };
   set('f_name', d.object_name); set('f_loc', d.location); set('f_eq', d.equipment); set('f_v', d.voltage_v);
-  set('f_date', d.inspection_date); set('f_eng', d.engineer_name); set('f_obs', d.observations);
+  set('f_date', d.inspection_date); set('f_eng', d.engineer_name); set('f_obs', d.observations); set('f_story', d.inspection_story);
   const byItem = Object.fromEntries((d.checklist || []).map((c) => [c.item, c]));
   document.querySelectorAll('.ck').forEach((r) => { const c = byItem[r.dataset.item]; if (!c) return;
     r.querySelector('select').value = c.status; r.querySelector('.note').value = c.note || ''; syncCk(r); });
