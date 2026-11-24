@@ -2,13 +2,13 @@
   "outputDirectory": "public",
   "functions": {
     "api/agent.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/fill.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/vision.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     }
   }
 }

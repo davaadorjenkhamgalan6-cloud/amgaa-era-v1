@@ -112,7 +112,7 @@ test('Claude алдаа өгвөл агентын ноорог хэвээр га
 test('Агент удаан ажилласан бол найруулгыг алгасна', async () => {
   let t = 0;
   const { fetchFn, requests } = fake(() => { throw new Error('дуудагдах ёсгүй'); });
-  const out = await run(fetchFn, { now: () => (t += 40000) });
+  const out = await run(fetchFn, { now: () => (t += 40000), reviewBudgetMs: 30000 });
   assert.equal(out.conclusion.review.status, 'skipped');
   assert.equal(requests.length, 2);
 });

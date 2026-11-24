@@ -1699,7 +1699,9 @@ $('form').addEventListener('input', saveDraft);
 $('form').addEventListener('change', saveDraft);
 
 // ================= Серверийн төлөв =================
+let aiReady = false;
 fetch('/api/agent').then((r) => r.json()).then((s) => {
+  aiReady = Boolean(s.ready);
   if (s.ready) {
     $('dot').classList.add('ready'); $('statusTxt').textContent = s.review ? 'AI агент бэлэн · Claude хяналттай' : 'AI агент бэлэн';
     if (!s.review) {
@@ -1721,12 +1723,13 @@ function showLog(items) {
   $('log').innerHTML = items.map((l, i) => `<li class="${esc(l.kind)}" style="animation-delay:${(i * 0.32).toFixed(2)}s">${esc(l.text)}</li>`).join('');
   return items.length * 320;
 }
-$('run').onclick = async () => {
+// AI агентыг ажиллуулна. Амжилттай бол true (lastResult шинэчлэгдэнэ).
+async function runAgentNow() {
   const insp = collect();
   const missing = [];
   if (!insp.object_name) missing.push('Объектын нэр (1-р хэсэг)');
   if (Object.keys(insp.scores).length < 15) missing.push(`15 үзүүлэлтээс ${15 - Object.keys(insp.scores).length} нь оноогүй (3-р хэсэг)`);
-  if (missing.length) { $('formMsg').innerHTML = '<div class="msg err"><b>Бөглөөгүй:</b>' + list(missing) + '</div>'; return; }
+  if (missing.length) { $('formMsg').innerHTML = '<div class="msg err"><b>Бөглөөгүй:</b>' + list(missing) + '</div>'; return false; }
   $('formMsg').innerHTML = ''; $('log').innerHTML = ''; $('outNav').classList.add('hidden');
   let i = 0; $('agentStatus').innerHTML = `<div class="loader"><span class="orb"></span><span id="waitTxt">${WAIT[0]}</span></div>`;
   const timer = setInterval(() => { const w = $('waitTxt'); if (w) w.textContent = WAIT[++i % WAIT.length]; }, 3500);
@@ -1738,12 +1741,12 @@ $('run').onclick = async () => {
     clearInterval(timer);
     const wait = showLog(out.log || []);
     await new Promise((res) => setTimeout(res, Math.min(wait, 3500)));
-    if (!r.ok) { $('agentStatus').innerHTML = `<div class="msg err">${esc(out.error || 'Алдаа ' + r.status)}</div>`; return; }
+    if (!r.ok) { $('agentStatus').innerHTML = `<div class="msg err">${esc(r.status === 504 ? 'AI агент хугацаандаа хариу өгсөнгүй. Дахин оролдоно уу.' : (out.error || 'Алдаа ' + r.status))}</div>`; return false; }
     if (out.stage === 'returned_to_engineer') {
       $('agentStatus').innerHTML = `<div class="msg warn"><b>${out.by === 'agent' ? 'Агент инженерт буцаалаа' : 'Өгөгдөл дутуу'}:</b> ${esc(out.message)}${list(out.missing || [])}Тодруулаад дахин илгээнэ үү.</div>`;
-      return;
+      return false;
     }
-    if (out.stage !== 'draft_ready') { $('agentStatus').innerHTML = `<div class="msg err">${esc(out.message || 'Агент дуусгаж чадсангүй.')}${out.check ? list(out.check.errors) : ''}</div>`; return; }
+    if (out.stage !== 'draft_ready') { $('agentStatus').innerHTML = `<div class="msg err">${esc(out.message || 'Агент дуусгаж чадсангүй.')}${out.check ? list(out.check.errors) : ''}</div>`; return false; }
     const c = out.check;
     $('agentStatus').innerHTML = (c.warnings.length
       ? `<div class="msg warn"><b>Ноорог бэлэн. Хянахдаа анхаарах:</b>${list(c.warnings)}</div>`
@@ -1752,10 +1755,28 @@ $('run').onclick = async () => {
     lastResult = { conclusion: out.conclusion, check: out.check, demo: out.demo_norms, log: out.log, scores: insp.scores, at: new Date().toISOString() };
     { const rec = cur(); rec.data = insp; rec.result = lastResult; rec.updated = nowIso(); persist(); }
     updateStatus();
+    return true;
   } catch (e) {
     clearInterval(timer); $('agentStatus').innerHTML = `<div class="msg err">${esc(e.message)}</div>`;
+    return false;
   } finally { $('run').disabled = false; document.body.classList.remove('running'); }
-};
+}
+$('run').onclick = () => runAgentNow();
+
+// Тайлан гаргахад AI-ийн эрсдэл, зөвлөмж алга (эсвэл оноо өөрчлөгдсөн) бол AI агентыг автоматаар ажиллуулна
+let aiAuto = null;
+async function ensureAi() {
+  const insp = collect();
+  if (lastResult && JSON.stringify(lastResult.scores) === JSON.stringify(insp.scores)) return true;
+  if (!aiReady || !insp.object_name || Object.keys(insp.scores).length < 15) return false;
+  if (!aiAuto) {
+    repMsg('<div class="msg">⏳ AI үүсэж болзошгүй эрсдэл, зөвлөмжийг гаргаж байна… (1–3 минут)</div>');
+    aiAuto = runAgentNow().finally(() => { aiAuto = null; });
+  }
+  const ok = await aiAuto;
+  if (!ok) repMsg(`<div class="msg warn">AI эрсдэл, зөвлөмж гаргаж чадсангүй: ${esc(($('agentStatus').innerText || '').trim().slice(0, 200))} — тайланд энэ хэсгийг хоосон үлдээлээ.</div>`);
+  return ok;
+}
 
 
 // ================= Зураг, PDF хавсралт (files.js — IndexedDB) =================
@@ -2027,6 +2048,7 @@ let repBusy = false;
 // Word тайланг Blob болгоно (ZIP багцад ч ашиглана). Дутуу бол null.
 async function wordBlob() {
   if (!reportModel(null)) return null;           // дутуу мэдээллийг эрт мэдэгдэнэ
+  await ensureAi();
   const m = reportModel(await attachments('docx'));
   if (!window.docx) await loadScript('vendor/docx.umd.js');
   const cover = await fetch(EraReport.ORG.cover).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
@@ -2044,6 +2066,10 @@ async function reportPdf(pre) {
   const w = pre || window.open('', '_blank');          // pop-up хориглолтод баригдахгүйн тулд цонхыг шууд нээнэ
   if (!w) { repMsg('<div class="msg err">Шинэ цонх нээгдсэнгүй — хөтчийн pop-up хориглолтыг энэ сайтад зөвшөөрнө үү.</div>'); return; }
   if (!pre) w.document.write('<p style="font:16px Arial;padding:30px">Тайлан бэлтгэж байна…</p>');
+  if (!(lastResult && JSON.stringify(lastResult.scores) === JSON.stringify(collect().scores)) && aiReady) {
+    try { w.document.body.innerHTML = '<p style="font:16px Arial;padding:30px">AI үүсэж болзошгүй эрсдэл, зөвлөмжийг гаргаж байна… (1–3 минут). Энэ цонхыг бүү хаагаарай.</p>'; } catch {}
+  }
+  await ensureAi();
   const m = reportModel(await attachments('html'));
   const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
   w.document.open(); w.document.write(EraReport.toHtml(m, base)); w.document.close();

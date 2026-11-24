@@ -167,3 +167,42 @@ test('API: ACCESS_CODE тохируулсан үед л код шаардана'
   assert.equal((await call('POST', { inspection: clone(sample) }, { 'x-access-code': 'буруу' })).code, 401);
   process.env = saved;
 });
+
+test('Эрсдэл, зөвлөмж хоосон бол код буцааж, AI өөрөө нөхөж бичнэ', async () => {
+  const empty = clone(good); empty.potential_risks = [];
+  const { fetchFn, requests } = fakeAnthropic([
+    [tu('a1', 'calculate_score'), ...SEARCHES.map((q, i) => tu('s' + i, 'search_norms', { query: q }))],
+    [tu('b1', 'submit_conclusion', empty)],
+    [tu('c1', 'submit_conclusion', good)],
+  ]);
+  const out = await runAgent(clone(sample), { provider: 'anthropic', env: { ANTHROPIC_API_KEY: 'k' }, fetchFn, searchNorms: demoSearchNorms });
+  assert.equal(out.stage, 'draft_ready');
+  const rejection = JSON.parse(requests[2].body.messages.at(-1).content[0].content);
+  assert.match(rejection.warnings.join(' '), /potential_risks/);
+  assert.ok(out.conclusion.potential_risks.length > 0);
+});
+
+test('Хугацааны төсөв: хагасаас хэтэрвэл шууд илгээхийг сануулна, дууссан бол 504-гүй зогсоно', async () => {
+  let t = 0;
+  const { fetchFn, requests } = fakeAnthropic([
+    [tu('a1', 'calculate_score')],
+    [tu('b1', 'submit_conclusion', good)],
+  ]);
+  const out = await runAgent(clone(sample), { provider: 'anthropic', env: { ANTHROPIC_API_KEY: 'k' }, fetchFn, searchNorms: demoSearchNorms, budgetMs: 90000, now: () => (t += 25000) });
+  const note = JSON.parse(requests[1].body.messages.at(-1).content[0].content);
+  assert.match(note.time_note || '', /шууд илгээ/);
+  assert.equal(out.stage, 'draft_ready');
+
+  let t2 = 0;
+  const slow = fakeAnthropic([[tu('a1', 'calculate_score')], [tu('a2', 'calculate_score')], [tu('a3', 'calculate_score')]]);
+  const out2 = await runAgent(clone(sample), { provider: 'anthropic', env: { ANTHROPIC_API_KEY: 'k' }, fetchFn: slow.fetchFn, searchNorms: demoSearchNorms, budgetMs: 100000, now: () => (t2 += 30000) });
+  assert.equal(out2.stage, 'failed');
+  assert.match(out2.message, /хугацаандаа/);
+});
+
+test('AI-ийн дуудлага хугацаа хэтэрвэл тайлбартай зогсоно', async () => {
+  const fetchFn = async () => { const e = new Error('timeout'); e.name = 'TimeoutError'; throw e; };
+  const out = await runAgent(clone(sample), { provider: 'anthropic', env: { ANTHROPIC_API_KEY: 'k' }, fetchFn, searchNorms: demoSearchNorms });
+  assert.equal(out.stage, 'failed');
+  assert.match(out.log.map((l) => l.text).join(' '), /хариу өгсөнгүй/);
+});
