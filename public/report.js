@@ -407,14 +407,16 @@ window.addEventListener('load', function () { (document.fonts ? document.fonts.r
     if (m.photos.length || m.docs.length) {
       A.push(h2('Хавсралт'));
       if (m.photos.length) {
-        A.push(para([run(`Үзлэгийн үеэр авсан фото зураг (${m.photos.length}):`, { bold: true })]));
+        // Мөр бүр cantSplit тул зураг, тайлбар нь салахгүй. Зургийн мөрөнд keepNext тавибал Word бүх мөрийг гинжлэн
+        // нэг хуудсанд багтаах гэж оролдоод хүснэгтийг бүхэлд нь дараагийн хуудас руу түлхэж, хоосон хуудас үлдээдэг.
+        A.push(new D.Paragraph({ keepNext: true, spacing: { after: 120, line: 300 }, children: [run(`Үзлэгийн үеэр авсан фото зураг (${m.photos.length}):`, { bold: true })] }));
         const BW = 300, BH = 225; // px — нэг нүдний зургийн хүрээ
         const fit = (p) => { const k = Math.min(BW / (p.w || BW), BH / (p.h || BH)); return { width: Math.round((p.w || BW) * k), height: Math.round((p.h || BH) * k) }; };
         const nb = { style: D.BorderStyle.NONE, size: 0, color: 'FFFFFF' };
         const pcell = (p) => new D.TableCell({ width: { size: Math.round(CW / 2), type: D.WidthType.DXA }, borders: { top: nb, bottom: nb, left: nb, right: nb },
           margins: { top: 80, bottom: 160, left: 80, right: 80 },
           children: p ? [
-            new D.Paragraph({ alignment: D.AlignmentType.CENTER, keepNext: true, children: [new D.ImageRun({ type: 'jpg', data: p.data, transformation: fit(p) })] }),
+            new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.ImageRun({ type: 'jpg', data: p.data, transformation: fit(p) })] }),
             new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { before: 60, after: 0, line: 252 }, children: [run(p.label, { size: 20 })] })] : [new D.Paragraph({ children: [] })] });
         const rows = [];
         for (let i = 0; i < m.photos.length; i += 2) rows.push(new D.TableRow({ cantSplit: true, children: [pcell(m.photos[i]), pcell(m.photos[i + 1])] }));

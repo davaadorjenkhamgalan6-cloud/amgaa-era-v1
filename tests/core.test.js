@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { computeScore } from '../lib/agent/scoring.js';
 import { validateInspection } from '../lib/agent/validate.js';
-import { checkDraft } from '../lib/agent/check.js';
+import { checkDraft, minRecs } from '../lib/agent/check.js';
+import { describeInspection, photoNotes } from '../lib/agent/agent.js';
 import { demoSearchNorms } from '../lib/agent/demo-norms.js';
 
 const sample = JSON.parse(readFileSync(new URL('./fixtures/sample-inspection.json', import.meta.url)));
@@ -145,4 +146,29 @@ test('дүрмийн бүлгийн дугаар эх сурвалжгүй бо�
   const w = checkDraft(d, ctx).warnings.join(' | ');
   assert.match(w, /"ЦБД 4\.1" ишлэл/);
   assert.doesNotMatch(w, /"ЦБД 1\.7"/);
+});
+
+test('зөрчил олон атлаа зөвлөмж цөөн бол код анхааруулж задлуулна', async () => {
+  const ctx = await ctxFor(sample);
+  // 37 зөрчилтэй гэж үзье: ноорогт 3 зөвлөмж хангалтгүй (≥ 13 байх ёстой)
+  const many = { ...ctx, violations: Array.from({ length: 37 }, (_, i) => ({ id: `V${i + 1}`, group: 'Кабель', item: 'x' })) };
+  const c = checkDraft(clone(good), many);
+  assert.ok(c.warnings.some((w) => /Зөвлөмж хэт цөөн: 37 зөрчилд \d+ зөвлөмж .* дор хаяж 13 зөвлөмж/.test(w)), c.warnings.join('\n'));
+  assert.equal(minRecs(37, 5), 13);
+  assert.equal(minRecs(100, 5), 15);
+  assert.equal(minRecs(2, 3), 3);
+});
+
+test('зургийн тайлбар AI-д баримт болж очно (давхардсан, "зөрчилгүй"-г хасна)', () => {
+  const insp = { ...clone(sample), photo_notes: [
+    { caption: 'Гэрлийн хэрэгсэл эвдэрч унжсан, утас изолентоор ороогдсон.', ind: '1' },
+    { caption: 'Гэрлийн хэрэгсэл эвдэрч унжсан, утас изолентоор ороогдсон.', ind: '1' },
+    { caption: 'Фасадын дагуу цахилгааны зөрчил ил харагдахгүй байна.', ind: '' },
+    { caption: '  ', ind: '2' },
+  ] };
+  assert.equal(photoNotes(insp).length, 1);
+  const txt = describeInspection(insp, [], []);
+  assert.match(txt, /## Зургийн тайлбар \(P\)/);
+  assert.match(txt, /\[P1\] \(I01\) Гэрлийн хэрэгсэл эвдэрч унжсан/);
+  assert.doesNotMatch(txt, /Фасадын/);
 });

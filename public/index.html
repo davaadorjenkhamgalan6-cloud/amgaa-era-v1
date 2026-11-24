@@ -1737,6 +1737,8 @@ async function runAgentNow() {
   $('run').disabled = true; document.body.classList.add('running');
   try {
     const code = $('f_code').value; if (code) store.set('amgaa_code', code);
+    // Зургийн тайлбар AI-д баримт болж очно (тайланд орох зургууд)
+    insp.photo_notes = att.filter((a) => a.kind === 'photo' && a.inReport !== false && String(a.caption || '').trim()).map((a) => ({ caption: String(a.caption).trim().slice(0, 240), ind: a.ind || '' }));
     const r = await fetch('/api/agent', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-access-code': code }, body: JSON.stringify({ inspection: insp, norms: window.normsForAgent ? window.normsForAgent(insp) : undefined }) });
     const out = await r.json().catch(() => ({ error: 'Серверийн хариу уншигдсангүй (хугацаа хэтэрсэн байж магадгүй)' }));
     clearInterval(timer);
