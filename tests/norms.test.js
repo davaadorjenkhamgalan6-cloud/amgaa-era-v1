@@ -169,6 +169,6 @@ test('заалтын текстийг цэгцэлнэ: хуудасны тол�
   // Бүлэг, дэс дараалал: 2.1.5 нь 1.7.31-ийн дараа, 1.7.4 нь 1.7.31-ээс өмнө
   const g = groupCited([{ id: 'c9', code: 'ЦБД', section: '2.1.5', content: 'Б.' }, { id: 'c2', code: 'ЦБД', section: '1.7.31', content: raw }, { id: 'c1', code: 'ЦБД', section: '1.7.4', content: 'А.' }]);
   assert.deepEqual(g.map((c) => c.title), ['БҮЛЭГ 1. ЕРӨНХИЙ ДҮРЭМ', 'БҮЛЭГ 2. ЦАХИЛГААН ЭРЧИМ ХҮЧИЙГ ДАМЖУУЛАХ']);
-  assert.deepEqual(g[0].sections.map((s) => s.label), ['ЦБД §1.7.4', 'ЦБД §1.7.31']);
+  assert.deepEqual(g[0].sections.map((s) => s.label), ['ЦБД 1.7.4', 'ЦБД 1.7.31']);
   assert.doesNotMatch(citedHtml(g.flatMap((c) => c.sections.map((s) => ({ code: s.code, section: s.section, content: raw })))), /БД 43-101-03|Мегаомметр|Хүчний кабель шугам/);
 });

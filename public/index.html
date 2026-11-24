@@ -605,7 +605,7 @@
       <textarea id="chatQ" rows="2" placeholder="Асуултаа бичнэ үү. Жишээ: Газардуулгын эсэргүүцэл хэдээс ихгүй байх ёстой вэ?"></textarea>
       <button id="chatSend" type="submit">Илгээх ➤</button>
     </form>
-    <p class="muted" style="margin-top:8px">Чатбот зөвхөн оруулсан дүрмийн заалтаас хариулж, заалтын дугаарыг [§…] хэлбэрээр заана. Хариулт бүрийн доор эх заалтыг харуулдаг — албан ажилд ашиглахдаа эх заалтаа шалгаарай.</p>
+    <p class="muted" style="margin-top:8px">Чатбот зөвхөн оруулсан дүрмийн заалтаас хариулж, заалт бүрийн дугаарыг заана. Хариулт бүрийн доор эх заалтыг харуулдаг — албан ажилд ашиглахдаа эх заалтаа шалгаарай.</p>
     <div class="navrow"><button class="back" onclick="go('')">← Төв</button><button class="sec" type="button" onclick="chatClear()">Яриаг цэвэрлэх</button></div>
   </section>
 </main>
@@ -2140,7 +2140,7 @@ function renderOutput(v) {
   const icons = { result: '%', norms: '§', recs: '!', conclusion: '✎', review: '✓' };
   if (!lastResult) { el.innerHTML = emptyOut(v, icons[v]); return; }
   const d = lastResult.conclusion;
-  const nl = (id) => { const n = d.norms.find((x) => x.id === id); return n ? esc((n.code || n.title) + (n.section ? ' §' + n.section : '')) : esc(id); };
+  const nl = (id) => { const n = d.norms.find((x) => x.id === id); return n ? esc((n.code || n.title) + (n.section ? ' ' + n.section : '')) : esc(id); };
   const ft = (id) => { const f = d.findings.find((x) => x.id === id); return f ? esc(f.title) : esc(id); };
   const delay = (i) => `style="animation-delay:${(i * 0.08).toFixed(2)}s"`;
   const head = `<h2><span class="n">${icons[v]}</span>${esc(VIEWS[v])}</h2><p class="muted" style="margin-top:-6px">${esc(d.object.name)}${d.object.inspection_date ? ' · ' + esc(d.object.inspection_date) : ''}</p>`;
@@ -2306,7 +2306,8 @@ function renderSugg() {
 function fmtAnswer(a, ex, invalid = []) {
   const ok = new Set(ex.map((e) => e.section));
   let h = esc(a).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-    .replace(/\[§\s*([^\]|]+?)\s*(?:\|[^\]]*)?\]/g, (m, sec) => `<span class="ref${ok.has(sec.trim()) ? '' : ' bad'}" title="${ok.has(sec.trim()) ? 'Эх заалтаас' : 'Энэ дугаар илгээсэн заалтад алга!'}">§${esc(sec.trim())}</span>`);
+    .replace(/\[§\s*([^\]|]+?)\s*(?:\|[^\]]*)?\]/g, (m, sec) => `<span class="ref${ok.has(sec.trim()) ? '' : ' bad'}" title="${ok.has(sec.trim()) ? 'Эх заалтаас' : 'Энэ дугаар илгээсэн заалтад алга!'}">${esc(sec.trim())}</span>`)
+    .replace(/§\s*/g, '');   // дугаарын өмнө § тэмдэг харуулахгүй
   h = h.split(/\n/).map((ln) => /^\s*[-•*]\s+/.test(ln) ? '• ' + ln.replace(/^\s*[-•*]\s+/, '') : ln).join('<br>');
   return h;
 }
@@ -2317,7 +2318,7 @@ function bubble(m) {
   if (m.pending) return `<div class="bub bot"><span class="typing"><i></i><i></i><i></i></span> <span class="muted">Дүрмээс хайж байна…</span></div>`;
   if (m.error) return `<div class="bub bot"><span style="color:var(--err)">${esc(m.error)}</span>${exHtml(m.ex || [], [], true)}</div>`;
   if (!m.ai) return `<div class="bub bot">${m.ex && m.ex.length ? `<span class="muted">${aiReady ? '' : 'AI түлхүүр тохируулаагүй тул '}Дүрмээс хамгийн тохирох заалтууд:</span>${exHtml(m.ex, [], true)}` : esc(m.text)}</div>`;
-  return `<div class="bub bot">${fmtAnswer(m.text, m.ex || [])}${m.grounded ? '' : `<div class="warnl">⚠ Хариулт эх заалтаар бүрэн баталгаажаагүй${m.invalid && m.invalid.length ? ` (§${m.invalid.map(esc).join(', §')} дугаар илгээсэн заалтад алга)` : ''} — доорх эх заалтыг шалгана уу.</div>`}${exHtml(m.ex || [], m.cited || [], !m.grounded)}</div>`;
+  return `<div class="bub bot">${fmtAnswer(m.text, m.ex || [])}${m.grounded ? '' : `<div class="warnl">⚠ Хариулт эх заалтаар бүрэн баталгаажаагүй${m.invalid && m.invalid.length ? ` (${m.invalid.map(esc).join(', ')} дугаар илгээсэн заалтад алга)` : ''} — доорх эх заалтыг шалгана уу.</div>`}${exHtml(m.ex || [], m.cited || [], !m.grounded)}</div>`;
 }
 function renderChat() {
   renderRuleBar();

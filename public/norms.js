@@ -336,7 +336,7 @@ export function groupCited(norms, full) {
     const all = (full && full(s.code, s.section)) || [];
     const parts = all.length ? all : s.parts.slice().sort((a, b) => Number(String(a.id).replace(/\D/g, '')) - Number(String(b.id).replace(/\D/g, '')));
     const text = parts.map((p) => p.content).join('\n');
-    return { ...s, label: `${s.code} §${s.section}`, chapter: chapterOf(s), blocks: formatNorm(text, s.section), page: parts[0] && parts[0].page };
+    return { ...s, label: `${s.code} ${s.section}`, chapter: chapterOf(s), blocks: formatNorm(text, s.section), page: parts[0] && parts[0].page };
   }).sort((a, b) => a.code.localeCompare(b.code) || cmpSec(a.section, b.section));
   const chapters = [];
   for (const s of secs) {
