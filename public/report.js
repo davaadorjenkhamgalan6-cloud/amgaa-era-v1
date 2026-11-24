@@ -114,7 +114,9 @@
       risks: ai ? (ai.potential_risks || []).map(stripRefs) : null,
       recs: ai ? ai.recommendations.map((r) => ({ action: stripRefs(r.action), priority: r.priority, days: r.deadline_days, title: stripRefs(r.title || ''),
         group: ['ЦБД', 'ТЭД', 'Бусад'].includes(r.group) ? r.group : /ТЭД/.test(r.action || '') ? 'ТЭД' : /ЦБД/.test(r.action || '') ? 'ЦБД' : 'Бусад',
-        norms: [] })) : null,   // заалтын ишлэлийг тайланд гаргахгүй
+        norms: [] })) : null,   // зөвлөмжийн мөрөнд дугаар гаргахгүй; норм заалтын бүрэн текст доорх тусдаа хэсэгт
+      // Холбогдох норм заалт: [{ title: 'БҮЛЭГ 1. …', sections: [{ label: 'ЦБД 1.7.31', blocks: [{ t, n, text, subs, more, nums }] }] }]
+      normGroups: (ai && Array.isArray(ai.normGroups)) ? ai.normGroups : [],
       toVerify: ai ? ai.to_verify || [] : [],
       conclusion: ai ? stripRefs(ai.conclusion) : '',
       ai: Boolean(ai),
@@ -163,6 +165,9 @@
   h2 { font-size:12pt; color:#1d2f6f; margin:20px 0 10px; text-transform:uppercase; text-align:center; letter-spacing:.3px; }
   h2 + p, h2 + table { break-before:avoid; }
   .rg { font-weight:bold; margin:12px 0 6px; text-align:justify; }
+  .nch { font-weight:bold; color:#1d2f6f; margin:12px 0 4px; } .nlb { font-weight:bold; margin:10px 0 4px; break-after:avoid; }
+  .nli { padding-left:7mm; text-indent:-7mm; text-align:justify; margin:0 0 4px; } .nli.nmore { text-indent:0; }
+  ul.nsub { margin:0 0 4px 7mm; padding-left:6mm; } ul.nsub li { text-align:justify; margin-bottom:3px; } .ntb { font-style:italic; color:#666; }
   ul.recs { margin:0 0 8px 0; padding-left:22px; } ul.recs li { margin-bottom:6px; text-align:justify; break-inside:avoid; }
   div.keep > ul { margin-bottom:0; } div.keep + ul { margin-top:6px; } li { break-inside:avoid; }
   p { text-align:justify; margin:0 0 8px; }
@@ -229,6 +234,9 @@ ${m.recs && m.recs.length ? groupRecs(m.recs).map((grp, gi) => {
   return `<div class="keep"><p class="rg">${gi + 1}. ${esc(grp.title)}:</p><ul class="recs">${li(grp.items[0])}</ul></div>`
     + (grp.items.length > 1 ? `<ul class="recs">${grp.items.slice(1).map(li).join('')}</ul>` : '');
 }).join('') + `<p>${esc(ORG.recClosing)}</p>` : `<p class="todo">${TODO}</p>`}
+${m.normGroups.length ? `<h2>Холбогдох норм заалт</h2>${m.normGroups.map((ch) => `<p class="nch">${esc(ch.title)}</p>${ch.sections.map((s) => `<div class="nsec"><p class="nlb">${esc(s.label)}</p>${s.blocks.map((b) =>
+  b.t === 'li' ? `<p class="nli">${esc(b.n)}. ${esc(b.text)}</p>${b.subs ? `<ul class="nsub">${b.subs.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}${(b.more || []).map((x) => `<p class="nli nmore">${esc(x)}</p>`).join('')}`
+  : b.t === 'table' ? `<p class="ntb">Хүснэгт ${esc(b.nums.join(', '))} — эх баримтаас үзнэ үү.</p>` : `<p>${esc(b.text)}</p>`).join('')}</div>`).join('')}`).join('')}` : ''}
 <div class="sign"><p>Бэлтгэсэн:</p><p>${esc(t.contact)}</p><p>${esc(t.sign)}</p></div>
 </div>
 ${m.photos.length || m.docs.length ? `<div class="appx"><h2>Хавсралт</h2>
@@ -384,6 +392,24 @@ window.addEventListener('load', function () { (document.fonts ? document.fonts.r
       });
       K.push(para(ORG.recClosing, { before: 160 }));
     } else K.push(todo());
+    // ---- Холбогдох норм заалт: БҮЛЭГ → заалт → дугаарласан хэсэг, дэд жагсаалт ----
+    if (m.normGroups.length) {
+      K.push(h2('Холбогдох норм заалт'));
+      m.normGroups.forEach((ch) => {
+        K.push(new D.Paragraph({ keepNext: true, spacing: { before: 160, after: 80 }, children: [run(ch.title, { bold: true, color: NAVY })] }));
+        ch.sections.forEach((s) => {
+          K.push(new D.Paragraph({ keepNext: true, spacing: { before: 120, after: 60 }, children: [run(s.label, { bold: true })] }));
+          s.blocks.forEach((b) => {
+            if (b.t === 'li') {
+              K.push(new D.Paragraph({ alignment: D.AlignmentType.JUSTIFIED, indent: { left: 400, hanging: 400 }, tabStops: [{ type: D.TabStopType.LEFT, position: 400 }], spacing: { after: 60, line: 288 }, children: [run(`${b.n}.\t${b.text}`)] }));
+              (b.subs || []).forEach((x) => K.push(new D.Paragraph({ bullet: { level: 1 }, alignment: D.AlignmentType.JUSTIFIED, spacing: { after: 40, line: 288 }, children: [run(x)] })));
+              (b.more || []).forEach((x) => K.push(new D.Paragraph({ alignment: D.AlignmentType.JUSTIFIED, indent: { left: 400 }, spacing: { after: 60, line: 288 }, children: [run(x)] })));
+            } else if (b.t === 'table') K.push(new D.Paragraph({ spacing: { after: 60 }, children: [run(`Хүснэгт ${b.nums.join(', ')} — эх баримтаас үзнэ үү.`, { italics: true, color: '666666' })] }));
+            else K.push(new D.Paragraph({ alignment: D.AlignmentType.JUSTIFIED, spacing: { after: 60, line: 288 }, children: [run(b.text)] }));
+          });
+        });
+      });
+    }
     // Гарын үсгийн хэсэг: хүрээгүй хөвөгч хүснэгт — сүүлийн хуудасны зүүн доод буланд (захын зайн доод хил)
     const none = { style: D.BorderStyle.NONE, size: 0, color: 'FFFFFF' };
     K.push(new D.Table({
@@ -407,14 +433,16 @@ window.addEventListener('load', function () { (document.fonts ? document.fonts.r
     if (m.photos.length || m.docs.length) {
       A.push(h2('Хавсралт'));
       if (m.photos.length) {
-        A.push(para([run(`Үзлэгийн үеэр авсан фото зураг (${m.photos.length}):`, { bold: true })]));
+        // Мөр бүр cantSplit тул зураг, тайлбар нь салахгүй. Зургийн мөрөнд keepNext тавибал Word бүх мөрийг гинжлэн
+        // нэг хуудсанд багтаах гэж оролдоод хүснэгтийг бүхэлд нь дараагийн хуудас руу түлхэж, хоосон хуудас үлдээдэг.
+        A.push(new D.Paragraph({ keepNext: true, spacing: { after: 120, line: 300 }, children: [run(`Үзлэгийн үеэр авсан фото зураг (${m.photos.length}):`, { bold: true })] }));
         const BW = 300, BH = 225; // px — нэг нүдний зургийн хүрээ
         const fit = (p) => { const k = Math.min(BW / (p.w || BW), BH / (p.h || BH)); return { width: Math.round((p.w || BW) * k), height: Math.round((p.h || BH) * k) }; };
         const nb = { style: D.BorderStyle.NONE, size: 0, color: 'FFFFFF' };
         const pcell = (p) => new D.TableCell({ width: { size: Math.round(CW / 2), type: D.WidthType.DXA }, borders: { top: nb, bottom: nb, left: nb, right: nb },
           margins: { top: 80, bottom: 160, left: 80, right: 80 },
           children: p ? [
-            new D.Paragraph({ alignment: D.AlignmentType.CENTER, keepNext: true, children: [new D.ImageRun({ type: 'jpg', data: p.data, transformation: fit(p) })] }),
+            new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.ImageRun({ type: 'jpg', data: p.data, transformation: fit(p) })] }),
             new D.Paragraph({ alignment: D.AlignmentType.CENTER, spacing: { before: 60, after: 0, line: 252 }, children: [run(p.label, { size: 20 })] })] : [new D.Paragraph({ children: [] })] });
         const rows = [];
         for (let i = 0; i < m.photos.length; i += 2) rows.push(new D.TableRow({ cantSplit: true, children: [pcell(m.photos[i]), pcell(m.photos[i + 1])] }));

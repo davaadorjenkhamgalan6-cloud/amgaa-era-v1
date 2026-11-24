@@ -172,6 +172,12 @@
   .score { display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin:6px 0; }
   .score b { font-size:40px; color:#fff; text-shadow:0 0 20px rgba(125,170,255,.9); }
   .norm { padding:9px 12px; border-left:3px solid var(--blue); background:rgba(79,140,255,.1); margin:6px 0; font-size:13.5px; border-radius:0; }
+  .nch { margin:14px 0 4px; font-weight:700; font-size:13px; letter-spacing:.04em; color:var(--blue); }
+  .norm .np { margin:6px 0 0; } .norm .nli { margin:5px 0 0 4px; padding-left:20px; text-indent:-20px; } .norm .nn { display:inline-block; width:20px; text-indent:0; font-weight:600; }
+  .norm .ntb { margin:6px 0 0; font-size:12.5px; opacity:.75; font-style:italic; }
+  .norm .nsub, .ex .nsub { margin:3px 0 0 18px; padding-left:16px; text-indent:0; list-style:disc; } .norm .nsub li, .ex .nsub li { margin:2px 0; white-space:normal; }
+  .norm .nmore, .ex .nmore { margin:4px 0 0; text-indent:0; white-space:normal; }
+  .ex .np { margin:4px 0 0; white-space:normal; } .ex .nli { margin:4px 0 0 4px; padding-left:20px; text-indent:-20px; white-space:normal; } .ex .nn { display:inline-block; width:20px; text-indent:0; font-weight:600; } .ex .ntb { margin:4px 0 0; opacity:.75; font-style:italic; white-space:normal; }
   #result > * { animation:fadeUp .6s both; }
   .hidden { display:none !important; }
 
@@ -601,7 +607,7 @@
       <textarea id="chatQ" rows="2" placeholder="Асуултаа бичнэ үү. Жишээ: Газардуулгын эсэргүүцэл хэдээс ихгүй байх ёстой вэ?"></textarea>
       <button id="chatSend" type="submit">Илгээх ➤</button>
     </form>
-    <p class="muted" style="margin-top:8px">Чатбот зөвхөн оруулсан дүрмийн заалтаас хариулж, заалтын дугаарыг [§…] хэлбэрээр заана. Хариулт бүрийн доор эх заалтыг харуулдаг — албан ажилд ашиглахдаа эх заалтаа шалгаарай.</p>
+    <p class="muted" style="margin-top:8px">Чатбот зөвхөн оруулсан дүрмийн заалтаас хариулж, заалт бүрийн дугаарыг заана. Хариулт бүрийн доор эх заалтыг харуулдаг — албан ажилд ашиглахдаа эх заалтаа шалгаарай.</p>
     <div class="navrow"><button class="back" onclick="go('')">← Төв</button><button class="sec" type="button" onclick="chatClear()">Яриаг цэвэрлэх</button></div>
   </section>
 </main>
@@ -1737,6 +1743,8 @@ async function runAgentNow() {
   $('run').disabled = true; document.body.classList.add('running');
   try {
     const code = $('f_code').value; if (code) store.set('amgaa_code', code);
+    // Зургийн тайлбар AI-д баримт болж очно (тайланд орох зургууд)
+    insp.photo_notes = att.filter((a) => a.kind === 'photo' && a.inReport !== false && String(a.caption || '').trim()).map((a) => ({ caption: String(a.caption).trim().slice(0, 240), ind: a.ind || '' }));
     const r = await fetch('/api/agent', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-access-code': code }, body: JSON.stringify({ inspection: insp, norms: window.normsForAgent ? window.normsForAgent(insp) : undefined }) });
     const out = await r.json().catch(() => ({ error: 'Серверийн хариу уншигдсангүй (хугацаа хэтэрсэн байж магадгүй)' }));
     clearInterval(timer);
@@ -2040,6 +2048,8 @@ function reportModel(a) {
     else note = 'Оноо AI дүгнэлт гаргаснаас хойш өөрчлөгдсөн тул тайланд AI-ийн текстийг оруулсангүй. AI агентаар дахин дүгнэлт гаргана уу.';
   } else note = 'AI дүгнэлт хараахан гараагүй тул эрсдэл, зөвлөмжийн хэсгийг тайланд хоосон үлдээлээ.';
   repMsg(note ? `<div class="msg warn">${esc(note)}</div>` : '');
+  // Зөвлөмжид холбогдох норм заалтыг бүлэг, дэс дараагаар цэгцэлж тайланд оруулна
+  if (ai && ai.norms && ai.norms.length && window.NormFmt) ai = { ...ai, normGroups: window.NormFmt.groups(ai.norms) };
   return EraReport.buildModel(insp, INDICATORS, ai, a);
 }
 function loadScript(src) {
@@ -2134,14 +2144,17 @@ function renderOutput(v) {
   const icons = { result: '%', norms: '§', recs: '!', conclusion: '✎', review: '✓' };
   if (!lastResult) { el.innerHTML = emptyOut(v, icons[v]); return; }
   const d = lastResult.conclusion;
-  const nl = (id) => { const n = d.norms.find((x) => x.id === id); return n ? esc((n.code || n.title) + (n.section ? ' §' + n.section : '')) : esc(id); };
+  const nl = (id) => { const n = d.norms.find((x) => x.id === id); return n ? esc((n.code || n.title) + (n.section ? ' ' + n.section : '')) : esc(id); };
   const ft = (id) => { const f = d.findings.find((x) => x.id === id); return f ? esc(f.title) : esc(id); };
   const delay = (i) => `style="animation-delay:${(i * 0.08).toFixed(2)}s"`;
   const head = `<h2><span class="n">${icons[v]}</span>${esc(VIEWS[v])}</h2><p class="muted" style="margin-top:-6px">${esc(d.object.name)}${d.object.inspection_date ? ' · ' + esc(d.object.inspection_date) : ''}</p>`;
   const recTable = `<div class="tw"><table><tr><th>Арга хэмжээ</th><th>Зэрэг</th><th>Хугацаа</th><th>ЦБД заалт</th></tr>
       ${d.recommendations.map((r, i) => `<tr ${delay(i)}><td>${r.title ? `<b>${esc(r.title)}</b>${r.group ? ` <span class="pill grade" style="font-size:11px;padding:1px 8px">${esc(r.group)}</span>` : ''}<br>` : ''}${esc(r.action)}<div class="muted">${(r.finding_ids || []).map(ft).join('; ')}</div></td><td><span class="pill pri-${esc(r.priority)}">${esc(r.priority)}</span></td><td style="white-space:nowrap">${Number(r.deadline_days)} хоног</td><td>${r.norm_refs.length ? r.norm_refs.map(nl).join('<br>') : '<span class="muted">тодруулах</span>'}</td></tr>`).join('')}
     </table></div>`;
-  const normsList = d.norms.length ? d.norms.map((n, i) => `<div class="norm" ${delay(i)}><b>${nl(n.id)}</b> — ${esc(n.content)}</div>`).join('') : '<p class="muted">Иш татсан заалт алга.</p>';
+  // Бүлэг → заалтын дэс дараагаар, PDF-ийн эвдэрсэн мөр, хүснэгт, хуудасны толгойг цэгцэлж харуулна
+  const normsList = !d.norms.length ? '<p class="muted">Холбогдох норм заалт алга.</p>'
+    : window.NormFmt ? window.NormFmt.cited(d.norms)
+    : d.norms.map((n, i) => `<div class="norm" ${delay(i)}><b>${nl(n.id)}</b> — ${esc(n.content)}</div>`).join('');
   const demoNote = lastResult.demo ? '<p class="muted">Тэмдэглэл: "ЖИШЭЭ НОРМ" нь туршилтын заалт. <span class="lnk" onclick="go(\'chat\')">ЦБД чатбот</span> хуудсанд дүрмээ оруулаад агентыг дахин ажиллуулбал жинхэнэ заалт гарна.</p>' : '';
 
   if (v === 'result') {
@@ -2160,7 +2173,7 @@ function renderOutput(v) {
     countUp($('resPct'), d.score.pct);
     requestAnimationFrame(() => setTimeout(() => el.querySelectorAll('.fill').forEach((f) => { f.style.width = f.dataset.w + '%'; }), 60));
   }
-  if (v === 'norms') el.innerHTML = head + `<p class="muted">Агент зөрчил бүрээр Цахилгаан байгууламжийн дүрмээс хайж олсон заалтууд. Дүрэмд байхгүй ишлэлийг код автоматаар хасдаг.</p>` + normsList + demoNote + navOut(v);
+  if (v === 'norms') el.innerHTML = head + `<p class="muted">Агент зөрчил бүрээр Цахилгаан байгууламжийн дүрмээс хайж олсон заалтууд. Дүрэмд байхгүй норм заалтыг код автоматаар хасдаг.</p>` + normsList + demoNote + navOut(v);
   if (v === 'recs') el.innerHTML = head + recTable + (d.to_verify.length ? '<h3>Баталгаажуулах шаардлагатай</h3>' + list(d.to_verify) : '') + navOut(v);
   if (v === 'conclusion') {
     el.innerHTML = `
@@ -2178,7 +2191,7 @@ function renderOutput(v) {
       <h3>Зөвлөмж</h3>${recTable}
       ${d.to_verify.length ? '<h3>Баталгаажуулах шаардлагатай</h3>' + list(d.to_verify) : ''}
       <h3>Дүгнэлт</h3><p>${esc(d.conclusion)}</p>
-      ${d.norms.length ? '<h3>Цахилгаан байгууламжийн дүрмийн ишлэл</h3>' + normsList : ''}${demoNote}
+      ${d.norms.length ? '<h3>Цахилгаан байгууламжийн дүрмийн норм заалт</h3>' + normsList : ''}${demoNote}
       ${d.review ? '<div class="no-print"><h3>AI хяналт</h3>' + reviewBox(d.review, true) + '</div>' : ''}` + navOut(v);
     countUp($('conPct'), d.score.pct);
   }
@@ -2274,7 +2287,7 @@ async function importRule(file) {
     for (const d of docs) if (d.source === 'local' && d.name === name) await N.removeDoc(d.id);
     await N.addDoc(doc);
     await init();
-    msg.innerHTML = `<div class="msg ok">Дүрэм нэмэгдлээ (${esc(code)}): ${chunks.length} хэсэг${numbered ? `, ${numbered} нь заалтын дугаартай (жишээ: ${esc(chunks.find((c) => /^\d/.test(c.section)).section)})` : ''}.${numbered < chunks.length * 0.3 ? ' <br>⚠ Заалтын дугаар цөөн танигдлаа — ишлэл хуудасны дугаараар гарна.' : ''}</div>`;
+    msg.innerHTML = `<div class="msg ok">Дүрэм нэмэгдлээ (${esc(code)}): ${chunks.length} хэсэг${numbered ? `, ${numbered} нь заалтын дугаартай (жишээ: ${esc(chunks.find((c) => /^\d/.test(c.section)).section)})` : ''}.${numbered < chunks.length * 0.3 ? ' <br>⚠ Заалтын дугаар цөөн танигдлаа — норм заалт хуудасны дугаараар гарна.' : ''}</div>`;
   } catch (e) { msg.innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
 }
 window.ruleRemove = async (btn, id) => {
@@ -2297,18 +2310,19 @@ function renderSugg() {
 function fmtAnswer(a, ex, invalid = []) {
   const ok = new Set(ex.map((e) => e.section));
   let h = esc(a).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-    .replace(/\[§\s*([^\]|]+?)\s*(?:\|[^\]]*)?\]/g, (m, sec) => `<span class="ref${ok.has(sec.trim()) ? '' : ' bad'}" title="${ok.has(sec.trim()) ? 'Эх заалтаас' : 'Энэ дугаар илгээсэн заалтад алга!'}">§${esc(sec.trim())}</span>`);
+    .replace(/\[§\s*([^\]|]+?)\s*(?:\|[^\]]*)?\]/g, (m, sec) => `<span class="ref${ok.has(sec.trim()) ? '' : ' bad'}" title="${ok.has(sec.trim()) ? 'Эх заалтаас' : 'Энэ дугаар илгээсэн заалтад алга!'}">${esc(sec.trim())}</span>`)
+    .replace(/§\s*/g, '');   // дугаарын өмнө § тэмдэг харуулахгүй
   h = h.split(/\n/).map((ln) => /^\s*[-•*]\s+/.test(ln) ? '• ' + ln.replace(/^\s*[-•*]\s+/, '') : ln).join('<br>');
   return h;
 }
 const exHtml = (ex, cited = [], open = false) => ex.length ? `<details${open ? ' open' : ''}><summary>Эх заалт (${ex.length})</summary>${ex.map((e) =>
-  `<div class="ex${cited.includes(e.section) ? ' cit' : ''}"><b>${esc(N.label(e))}</b>${e.page ? ` <span class="muted">х.${e.page}</span>` : ''}${e.title ? ` <span class="muted">· ${esc(e.title)}</span>` : ''}\n${esc(e.content)}</div>`).join('')}</details>` : '';
+  `<div class="ex${cited.includes(e.section) ? ' cit' : ''}"><b>${esc(N.label(e))}</b>${e.page ? ` <span class="muted">х.${e.page}</span>` : ''}${e.title ? ` <span class="muted">· ${esc(e.title)}</span>` : ''}${N.normBlocksHtml(N.formatNorm(e.content, e.section))}</div>`).join('')}</details>` : '';
 function bubble(m) {
   if (m.role === 'me') return `<div class="bub me">${esc(m.text)}</div>`;
   if (m.pending) return `<div class="bub bot"><span class="typing"><i></i><i></i><i></i></span> <span class="muted">Дүрмээс хайж байна…</span></div>`;
   if (m.error) return `<div class="bub bot"><span style="color:var(--err)">${esc(m.error)}</span>${exHtml(m.ex || [], [], true)}</div>`;
   if (!m.ai) return `<div class="bub bot">${m.ex && m.ex.length ? `<span class="muted">${aiReady ? '' : 'AI түлхүүр тохируулаагүй тул '}Дүрмээс хамгийн тохирох заалтууд:</span>${exHtml(m.ex, [], true)}` : esc(m.text)}</div>`;
-  return `<div class="bub bot">${fmtAnswer(m.text, m.ex || [])}${m.grounded ? '' : `<div class="warnl">⚠ Хариулт эх заалтаар бүрэн баталгаажаагүй${m.invalid && m.invalid.length ? ` (§${m.invalid.map(esc).join(', §')} дугаар илгээсэн заалтад алга)` : ''} — доорх эх заалтыг шалгана уу.</div>`}${exHtml(m.ex || [], m.cited || [], !m.grounded)}</div>`;
+  return `<div class="bub bot">${fmtAnswer(m.text, m.ex || [])}${m.grounded ? '' : `<div class="warnl">⚠ Хариулт эх заалтаар бүрэн баталгаажаагүй${m.invalid && m.invalid.length ? ` (${m.invalid.map(esc).join(', ')} дугаар илгээсэн заалтад алга)` : ''} — доорх эх заалтыг шалгана уу.</div>`}${exHtml(m.ex || [], m.cited || [], !m.grounded)}</div>`;
 }
 function renderChat() {
   renderRuleBar();
@@ -2359,6 +2373,11 @@ window.normsForAgent = (insp) => {
   return N.pick(index, [...qs, ...weak], 24).map(({ score, matched, ...c }) => c);
 };
 window.normsStatus = () => rule ? { name: rule.name, n: rule.chunks.length } : null;
+// Дүгнэлтийн хуудсанд: иш татсан заалтыг бүлгээр цэгцэлж, заалтын бүх хэсгийг дүрмийн сангаас нэгтгэнэ
+window.NormFmt = {
+  groups: (norms) => N.groupCited(norms, (code, sec) => (rule ? rule.chunks.filter((c) => (c.code || N.CODE) === code && String(c.section || '').replace(/^.*?(\d+(?:\.\d+)*).*$/, '$1') === sec) : [])),
+  cited: (norms) => N.citedHtml(norms, (code, sec) => (rule ? rule.chunks.filter((c) => (c.code || N.CODE) === code && String(c.section || '').replace(/^.*?(\d+(?:\.\d+)*).*$/, '$1') === sec) : [])),
+};
 init();
 </script>
 
