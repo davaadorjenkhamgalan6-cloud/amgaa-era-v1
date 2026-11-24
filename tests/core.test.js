@@ -144,7 +144,7 @@ test('дүрмийн бүлгийн дугаар эх сурвалжгүй бо�
   d.recommendations[0].action += ' (ЦБД 1.7, 4.1).';
   const ctx = { ...(await ctxFor(sample)), sourceText: 'Инженер: газардуулга ЦБД 1.7-р бүлэг' };
   const w = checkDraft(d, ctx).warnings.join(' | ');
-  assert.match(w, /"ЦБД 4\.1" ишлэл/);
+  assert.match(w, /"ЦБД 4\.1" норм заалт/);
   assert.doesNotMatch(w, /"ЦБД 1\.7"/);
 });
 

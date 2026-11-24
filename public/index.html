@@ -2148,7 +2148,7 @@ function renderOutput(v) {
       ${d.recommendations.map((r, i) => `<tr ${delay(i)}><td>${r.title ? `<b>${esc(r.title)}</b>${r.group ? ` <span class="pill grade" style="font-size:11px;padding:1px 8px">${esc(r.group)}</span>` : ''}<br>` : ''}${esc(r.action)}<div class="muted">${(r.finding_ids || []).map(ft).join('; ')}</div></td><td><span class="pill pri-${esc(r.priority)}">${esc(r.priority)}</span></td><td style="white-space:nowrap">${Number(r.deadline_days)} хоног</td><td>${r.norm_refs.length ? r.norm_refs.map(nl).join('<br>') : '<span class="muted">тодруулах</span>'}</td></tr>`).join('')}
     </table></div>`;
   // Бүлэг → заалтын дэс дараагаар, PDF-ийн эвдэрсэн мөр, хүснэгт, хуудасны толгойг цэгцэлж харуулна
-  const normsList = !d.norms.length ? '<p class="muted">Иш татсан заалт алга.</p>'
+  const normsList = !d.norms.length ? '<p class="muted">Холбогдох норм заалт алга.</p>'
     : window.NormFmt ? window.NormFmt.cited(d.norms)
     : d.norms.map((n, i) => `<div class="norm" ${delay(i)}><b>${nl(n.id)}</b> — ${esc(n.content)}</div>`).join('');
   const demoNote = lastResult.demo ? '<p class="muted">Тэмдэглэл: "ЖИШЭЭ НОРМ" нь туршилтын заалт. <span class="lnk" onclick="go(\'chat\')">ЦБД чатбот</span> хуудсанд дүрмээ оруулаад агентыг дахин ажиллуулбал жинхэнэ заалт гарна.</p>' : '';
@@ -2169,7 +2169,7 @@ function renderOutput(v) {
     countUp($('resPct'), d.score.pct);
     requestAnimationFrame(() => setTimeout(() => el.querySelectorAll('.fill').forEach((f) => { f.style.width = f.dataset.w + '%'; }), 60));
   }
-  if (v === 'norms') el.innerHTML = head + `<p class="muted">Агент зөрчил бүрээр Цахилгаан байгууламжийн дүрмээс хайж олсон заалтууд. Дүрэмд байхгүй ишлэлийг код автоматаар хасдаг.</p>` + normsList + demoNote + navOut(v);
+  if (v === 'norms') el.innerHTML = head + `<p class="muted">Агент зөрчил бүрээр Цахилгаан байгууламжийн дүрмээс хайж олсон заалтууд. Дүрэмд байхгүй норм заалтыг код автоматаар хасдаг.</p>` + normsList + demoNote + navOut(v);
   if (v === 'recs') el.innerHTML = head + recTable + (d.to_verify.length ? '<h3>Баталгаажуулах шаардлагатай</h3>' + list(d.to_verify) : '') + navOut(v);
   if (v === 'conclusion') {
     el.innerHTML = `
@@ -2187,7 +2187,7 @@ function renderOutput(v) {
       <h3>Зөвлөмж</h3>${recTable}
       ${d.to_verify.length ? '<h3>Баталгаажуулах шаардлагатай</h3>' + list(d.to_verify) : ''}
       <h3>Дүгнэлт</h3><p>${esc(d.conclusion)}</p>
-      ${d.norms.length ? '<h3>Цахилгаан байгууламжийн дүрмийн ишлэл</h3>' + normsList : ''}${demoNote}
+      ${d.norms.length ? '<h3>Цахилгаан байгууламжийн дүрмийн норм заалт</h3>' + normsList : ''}${demoNote}
       ${d.review ? '<div class="no-print"><h3>AI хяналт</h3>' + reviewBox(d.review, true) + '</div>' : ''}` + navOut(v);
     countUp($('conPct'), d.score.pct);
   }
@@ -2283,7 +2283,7 @@ async function importRule(file) {
     for (const d of docs) if (d.source === 'local' && d.name === name) await N.removeDoc(d.id);
     await N.addDoc(doc);
     await init();
-    msg.innerHTML = `<div class="msg ok">Дүрэм нэмэгдлээ (${esc(code)}): ${chunks.length} хэсэг${numbered ? `, ${numbered} нь заалтын дугаартай (жишээ: ${esc(chunks.find((c) => /^\d/.test(c.section)).section)})` : ''}.${numbered < chunks.length * 0.3 ? ' <br>⚠ Заалтын дугаар цөөн танигдлаа — ишлэл хуудасны дугаараар гарна.' : ''}</div>`;
+    msg.innerHTML = `<div class="msg ok">Дүрэм нэмэгдлээ (${esc(code)}): ${chunks.length} хэсэг${numbered ? `, ${numbered} нь заалтын дугаартай (жишээ: ${esc(chunks.find((c) => /^\d/.test(c.section)).section)})` : ''}.${numbered < chunks.length * 0.3 ? ' <br>⚠ Заалтын дугаар цөөн танигдлаа — норм заалт хуудасны дугаараар гарна.' : ''}</div>`;
   } catch (e) { msg.innerHTML = `<div class="msg err">${esc(e.message)}</div>`; }
 }
 window.ruleRemove = async (btn, id) => {
