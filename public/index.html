@@ -1703,9 +1703,10 @@ let aiReady = false;
 fetch('/api/agent').then((r) => r.json()).then((s) => {
   aiReady = Boolean(s.ready);
   if (s.ready) {
-    $('dot').classList.add('ready'); $('statusTxt').textContent = s.review ? 'AI агент бэлэн · Claude хяналттай' : 'AI агент бэлэн';
+    const rv = s.reviewer === 'gemini' ? 'Gemini' : 'Claude';
+    $('dot').classList.add('ready'); $('statusTxt').textContent = s.review ? `AI агент бэлэн · ${rv} хяналттай` : 'AI агент бэлэн';
     if (!s.review) {
-      $('setupMsg').innerHTML = '<b>Claude хяналт идэвхгүй.</b> Vercel → Settings → Environment Variables (эсвэл <code>.env</code>)-д <code>ANTHROPIC_API_KEY</code> нэмбэл агент дууссаны дараа Claude дүгнэлтийг шалгаж, найруулна.';
+      $('setupMsg').innerHTML = '<b>AI хяналт идэвхгүй.</b> <code>AI_REVIEW=off</code> тохиргоог арилгавал агент дууссаны дараа AI дүгнэлтийг шалгаж, найруулна.';
       $('setupMsg').classList.remove('hidden');
     }
   }
@@ -1718,7 +1719,7 @@ fetch('/api/agent').then((r) => r.json()).then((s) => {
 }).catch(() => { $('statusTxt').textContent = location.protocol === 'file:' ? 'Локал файл — AI зөвхөн Vercel дээр' : 'Сервер холбогдсонгүй'; });
 
 // ================= Агент ажиллуулах =================
-const WAIT = ['Оноо тооцоолж байна…','Цахилгаан байгууламжийн дүрмээс хайж байна…','Зөрчлүүдийг шинжилж байна…','Дүгнэлт бичиж байна…','Кодын шалгалтаар шалгаж байна…','Claude шалгаж, найруулж байна…'];
+const WAIT = ['Оноо тооцоолж байна…','Цахилгаан байгууламжийн дүрмээс хайж байна…','Зөрчлүүдийг шинжилж байна…','Дүгнэлт бичиж байна…','Кодын шалгалтаар шалгаж байна…','AI шалгаж, найруулж байна…'];
 function showLog(items) {
   $('log').innerHTML = items.map((l, i) => `<li class="${esc(l.kind)}" style="animation-delay:${(i * 0.32).toFixed(2)}s">${esc(l.text)}</li>`).join('');
   return items.length * 320;
@@ -2100,17 +2101,19 @@ async function bundleZip() {
   finally { repBusy = false; }
 }
 
-// ================= Claude-ийн хяналт =================
+// ================= AI хяналт =================
+const reviewerOf = (m = '') => (/^gemini/i.test(m) ? 'Gemini' : /^claude/i.test(m) ? 'Claude' : 'AI');
 function reviewBox(r, full = false) {
   if (!r) return '';
+  const who = reviewerOf(r.model);
   if (r.status === 'applied' || r.status === 'reverted') {
     const head = r.status === 'applied'
-      ? `<b>Claude шалгаж найруулсан</b> (${esc(r.model)}) — ${r.changes.length} засвар${r.kept && r.kept.length ? `; тоо/код хөндсөн ${r.kept.length} засварыг код буцаасан` : ''}.`
-      : `<b>Claude найруулга хэрэглэгдээгүй:</b> ${esc(r.reason)}.`;
+      ? `<b>${who} шалгаж найруулсан</b> (${esc(r.model)}) — ${r.changes.length} засвар${r.kept && r.kept.length ? `; тоо/код хөндсөн ${r.kept.length} засварыг код буцаасан` : ''}.`
+      : `<b>${who} найруулга хэрэглэгдээгүй:</b> ${esc(r.reason)}.`;
     return `<div class="msg ${r.status === 'applied' ? 'ok' : 'warn'}">${head}${full && r.changes.length ? list(r.changes) : ''}</div>`
-      + (r.issues.length ? `<div class="msg warn"><b>Claude-ийн тэмдэглэл — шууд удирдлага анхаарах:</b>${list(r.issues)}</div>` : '');
+      + (r.issues.length ? `<div class="msg warn"><b>${who}-ийн тэмдэглэл — шууд удирдлага анхаарах:</b>${list(r.issues)}</div>` : '');
   }
-  return `<div class="msg warn"><b>Claude хяналт хийгдсэнгүй:</b> ${esc(r.reason)}. Агентын ноорог хэвээр.</div>`;
+  return `<div class="msg warn"><b>AI хяналт хийгдсэнгүй:</b> ${esc(r.reason)}. Агентын ноорог хэвээр.</div>`;
 }
 
 // ================= Гаралтын хуудсууд =================
@@ -2176,7 +2179,7 @@ function renderOutput(v) {
       ${d.to_verify.length ? '<h3>Баталгаажуулах шаардлагатай</h3>' + list(d.to_verify) : ''}
       <h3>Дүгнэлт</h3><p>${esc(d.conclusion)}</p>
       ${d.norms.length ? '<h3>Цахилгаан байгууламжийн дүрмийн ишлэл</h3>' + normsList : ''}${demoNote}
-      ${d.review ? '<div class="no-print"><h3>Claude-ийн хяналт</h3>' + reviewBox(d.review, true) + '</div>' : ''}` + navOut(v);
+      ${d.review ? '<div class="no-print"><h3>AI хяналт</h3>' + reviewBox(d.review, true) + '</div>' : ''}` + navOut(v);
     countUp($('conPct'), d.score.pct);
   }
   if (v === 'review') {
@@ -2189,7 +2192,7 @@ function renderOutput(v) {
       </div>
       <h3>Хянахдаа анхаарах</h3>
       ${lastResult.check.warnings.length ? list(lastResult.check.warnings) : '<p class="muted">Кодын шалгалт бүгд давсан.</p>'}
-      ${d.review ? '<h3>Claude-ийн хяналт</h3>' + reviewBox(d.review, true) : ''}
+      ${d.review ? '<h3>AI хяналт</h3>' + reviewBox(d.review, true) : ''}
       ${d.to_verify.length ? '<h3>Талбайд баталгаажуулах</h3>' + list(d.to_verify) : ''}
       <h3>Товч дүгнэлт</h3><p>${esc(d.summary)}</p>
       <div class="outnav"><button onclick="go('conclusion')">Дүгнэлт бүтнээр харах</button><button class="sec" onclick="reportWord()">📄 Тайлан — Word</button><button class="sec" onclick="reportPdf()">🖨 Тайлан — PDF</button></div><div class="repmsg"></div>` + navOut(v);

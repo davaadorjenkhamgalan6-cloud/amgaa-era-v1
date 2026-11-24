@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runAgent } from '../lib/agent/agent.js';
 import { demoSearchNorms } from '../lib/agent/demo-norms.js';
-import { safeEdit, mergeReview, reviewEnabled } from '../lib/agent/review.js';
+import { safeEdit, mergeReview, reviewEnabled, reviewProvider } from '../lib/agent/review.js';
 
 const sample = JSON.parse(readFileSync(new URL('./fixtures/sample-inspection.json', import.meta.url)));
 const good = JSON.parse(readFileSync(new URL('./fixtures/model-response.json', import.meta.url), 'utf8'));
@@ -120,5 +120,54 @@ test('Агент удаан ажилласан бол найруулгыг ал�
 test('reviewEnabled: Claude түлхүүр байвал асна, AI_REVIEW=off бол унтарна', () => {
   assert.equal(reviewEnabled({ ANTHROPIC_API_KEY: 'k' }), true);
   assert.equal(reviewEnabled({ ANTHROPIC_API_KEY: 'k', AI_REVIEW: 'off' }), false);
-  assert.equal(reviewEnabled({ GEMINI_API_KEY: 'g' }), false);
+  assert.equal(reviewEnabled({ GEMINI_API_KEY: 'g' }), true);
+  assert.equal(reviewEnabled({}), false);
+  assert.equal(reviewProvider({ GEMINI_API_KEY: 'g' }), 'gemini');
+  assert.equal(reviewProvider({ ANTHROPIC_API_KEY: 'k', GEMINI_API_KEY: 'g' }), 'anthropic');
+  assert.equal(reviewProvider({ ANTHROPIC_API_KEY: 'k', GEMINI_API_KEY: 'g', REVIEW_PROVIDER: 'gemini' }), 'gemini');
+});
+
+// Gemini: агентын 2 алхам (functionCall) + хяналтын 1 хүсэлт (toolConfig mode ANY)
+test('Claude түлхүүргүй үед Gemini шалгаж найруулна', async () => {
+  const requests = [];
+  const fc = (name, args = {}) => ({ functionCall: { name, args } });
+  const script = [
+    [fc('calculate_score'), ...SEARCHES.map((q) => fc('search_norms', { query: q }))],
+    [fc('submit_conclusion', good)],
+  ];
+  let n = 0;
+  const fetchFn = async (url, opts) => {
+    const body = JSON.parse(opts.body);
+    requests.push({ url, body });
+    if (body.toolConfig) {
+      const draft = JSON.parse(body.contents[0].parts[0].text.split('# Агентын ноорог (JSON)\n')[1].split('\n\nНоорогийг')[0]);
+      const edit = editOf({ ...good, findings: draft.findings });
+      return { ok: true, json: async () => ({ candidates: [{ content: { role: 'model', parts: [fc('submit_review', edit)] } }] }) };
+    }
+    return { ok: true, json: async () => ({ candidates: [{ content: { role: 'model', parts: script[n++] } }] }) };
+  };
+  const out = await runAgent(clone(sample), { provider: 'gemini', env: { GEMINI_API_KEY: 'g' }, fetchFn, searchNorms: demoSearchNorms, review: true });
+  assert.equal(out.stage, 'draft_ready');
+  assert.equal(requests.length, 3);
+  assert.match(requests[2].url, /generativelanguage\.googleapis\.com/);
+  assert.deepEqual(requests[2].body.toolConfig.functionCallingConfig.allowedFunctionNames, ['submit_review']);
+  assert.equal(out.conclusion.review.status, 'applied');
+  assert.match(out.conclusion.review.model, /^gemini/);
+  assert.match(out.conclusion.summary, /үзлэгийн дүнд/);
+  assert.match(out.log.at(-2).text, /Gemini шалгаж найруулав: 2 засвар, анхаарах 1/);
+});
+
+test('Gemini 429 өгвөл агентын ноорог хэвээр, шалтгааныг тайлбарлана', async () => {
+  const fc = (name, args = {}) => ({ functionCall: { name, args } });
+  const script = [[fc('calculate_score'), ...SEARCHES.map((q) => fc('search_norms', { query: q }))], [fc('submit_conclusion', good)]];
+  let n = 0;
+  const fetchFn = async (url, opts) => {
+    const body = JSON.parse(opts.body);
+    if (body.toolConfig) return { ok: false, status: 429, json: async () => ({ error: { message: 'Quota exceeded' } }) };
+    return { ok: true, json: async () => ({ candidates: [{ content: { role: 'model', parts: script[n++] } }] }) };
+  };
+  const out = await runAgent(clone(sample), { provider: 'gemini', env: { GEMINI_API_KEY: 'g' }, fetchFn, searchNorms: demoSearchNorms, review: true });
+  assert.equal(out.stage, 'draft_ready');
+  assert.equal(out.conclusion.review.status, 'error');
+  assert.match(out.conclusion.review.reason, /Gemini API алдаа 429.*үнэгүй түвшний/);
 });

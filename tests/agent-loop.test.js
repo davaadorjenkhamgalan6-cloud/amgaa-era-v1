@@ -154,7 +154,7 @@ test('API: түлхүүргүй үед ойлгомжтой мэдэгдэл, л
   const saved = { ...process.env };
   delete process.env.ANTHROPIC_API_KEY; delete process.env.GEMINI_API_KEY; delete process.env.ACCESS_CODE;
   const g = await call('GET');
-  assert.deepEqual(g.data, { ready: false, provider: null, review: false, needs_code: false });
+  assert.deepEqual(g.data, { ready: false, provider: null, review: false, reviewer: null, needs_code: false });
   const p = await call('POST', { inspection: clone(sample) });
   assert.equal(p.code, 503);
   assert.match(p.data.error, /GEMINI_API_KEY/);

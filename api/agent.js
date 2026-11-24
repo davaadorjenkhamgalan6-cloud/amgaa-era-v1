@@ -3,7 +3,7 @@
 import { runAgent } from '../lib/agent/agent.js';
 import { pickProvider } from '../lib/agent/providers.js';
 import { demoSearchNorms } from '../lib/agent/demo-norms.js';
-import { reviewEnabled } from '../lib/agent/review.js';
+import { reviewEnabled, reviewProvider } from '../lib/agent/review.js';
 import { buildIndex, search } from '../public/norms.js';
 
 // Хөтчөөс ирсэн ЦБД-ийн заалтууд (оруулсан дүрмээс үзлэгийн зөрчлөөр урьдчилан шүүсэн) — байвал жишээ нормын оронд
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   const provider = pickProvider();
 
   if (req.method === 'GET') {
-    return res.status(200).json({ ready: Boolean(provider), provider, review: reviewEnabled(), needs_code: Boolean(process.env.ACCESS_CODE) });
+    return res.status(200).json({ ready: Boolean(provider), provider, review: reviewEnabled(), reviewer: reviewEnabled() ? reviewProvider() : null, needs_code: Boolean(process.env.ACCESS_CODE) });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Зөвхөн POST' });
 
