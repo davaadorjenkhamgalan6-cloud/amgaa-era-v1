@@ -68,3 +68,18 @@ test('зөвлөмж бүлгээр (ЦБД → ТЭД), зэргээр эрэм
   assert.doesNotMatch(html, /<table><thead><tr><th class="c" style="width:6%">№<\/th><th>Арга хэмжээ/);
   assert.match(html, /Дээрх ажлуудыг хийж дуусгах төлөвлөгөөг/);
 });
+
+test('холбогдох норм заалт тайланд бүлэг, дугаарласан хэсэг, дэд жагсаалттайгаар орно', () => {
+  const ai = JSON.parse(readFileSync(new URL('./fixtures/model-response.json', import.meta.url), 'utf8'));
+  ai.norms = []; ai.score = { pct: 61.2, raw: 92, max: 150 };
+  ai.normGroups = [{ title: 'БҮЛЭГ 1. ЕРӨНХИЙ ДҮРЭМ', sections: [{ label: 'ЦБД 1.7.31', blocks: [
+    { t: 'p', text: 'Газардуулгын төхөөрөмжийг турших ёстой.' },
+    { t: 'li', n: '4', text: 'Фаз-нойль хэлхээг шалгах:', subs: ['Гүйдлийг шууд хэмжих;', 'Эсэргүүцлийг хэмжих.'] },
+    { t: 'table', nums: ['1.7.39'] }] }] }];
+  const html = R.toHtml(R.buildModel(insp(byNo(Array(15).fill(6))), IND, ai), '/');
+  assert.match(html, /<h2>Холбогдох норм заалт<\/h2><p class="nch">БҮЛЭГ 1\. ЕРӨНХИЙ ДҮРЭМ<\/p>/);
+  assert.match(html, /<p class="nlb">ЦБД 1\.7\.31<\/p>/);
+  assert.match(html, /<p class="nli">4\. Фаз-нойль хэлхээг шалгах:<\/p><ul class="nsub"><li>Гүйдлийг шууд хэмжих;<\/li>/);
+  assert.match(html, /Хүснэгт 1\.7\.39 — эх баримтаас үзнэ үү/);
+  assert.ok(!html.includes('§'));
+});

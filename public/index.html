@@ -175,6 +175,8 @@
   .nch { margin:14px 0 4px; font-weight:700; font-size:13px; letter-spacing:.04em; color:var(--blue); }
   .norm .np { margin:6px 0 0; } .norm .nli { margin:5px 0 0 4px; padding-left:20px; text-indent:-20px; } .norm .nn { display:inline-block; width:20px; text-indent:0; font-weight:600; }
   .norm .ntb { margin:6px 0 0; font-size:12.5px; opacity:.75; font-style:italic; }
+  .norm .nsub, .ex .nsub { margin:3px 0 0 18px; padding-left:16px; text-indent:0; list-style:disc; } .norm .nsub li, .ex .nsub li { margin:2px 0; white-space:normal; }
+  .norm .nmore, .ex .nmore { margin:4px 0 0; text-indent:0; white-space:normal; }
   .ex .np { margin:4px 0 0; white-space:normal; } .ex .nli { margin:4px 0 0 4px; padding-left:20px; text-indent:-20px; white-space:normal; } .ex .nn { display:inline-block; width:20px; text-indent:0; font-weight:600; } .ex .ntb { margin:4px 0 0; opacity:.75; font-style:italic; white-space:normal; }
   #result > * { animation:fadeUp .6s both; }
   .hidden { display:none !important; }
@@ -2046,6 +2048,8 @@ function reportModel(a) {
     else note = 'Оноо AI дүгнэлт гаргаснаас хойш өөрчлөгдсөн тул тайланд AI-ийн текстийг оруулсангүй. AI агентаар дахин дүгнэлт гаргана уу.';
   } else note = 'AI дүгнэлт хараахан гараагүй тул эрсдэл, зөвлөмжийн хэсгийг тайланд хоосон үлдээлээ.';
   repMsg(note ? `<div class="msg warn">${esc(note)}</div>` : '');
+  // Зөвлөмжид холбогдох норм заалтыг бүлэг, дэс дараагаар цэгцэлж тайланд оруулна
+  if (ai && ai.norms && ai.norms.length && window.NormFmt) ai = { ...ai, normGroups: window.NormFmt.groups(ai.norms) };
   return EraReport.buildModel(insp, INDICATORS, ai, a);
 }
 function loadScript(src) {
@@ -2371,6 +2375,7 @@ window.normsForAgent = (insp) => {
 window.normsStatus = () => rule ? { name: rule.name, n: rule.chunks.length } : null;
 // Дүгнэлтийн хуудсанд: иш татсан заалтыг бүлгээр цэгцэлж, заалтын бүх хэсгийг дүрмийн сангаас нэгтгэнэ
 window.NormFmt = {
+  groups: (norms) => N.groupCited(norms, (code, sec) => (rule ? rule.chunks.filter((c) => (c.code || N.CODE) === code && String(c.section || '').replace(/^.*?(\d+(?:\.\d+)*).*$/, '$1') === sec) : [])),
   cited: (norms) => N.citedHtml(norms, (code, sec) => (rule ? rule.chunks.filter((c) => (c.code || N.CODE) === code && String(c.section || '').replace(/^.*?(\d+(?:\.\d+)*).*$/, '$1') === sec) : [])),
 };
 init();

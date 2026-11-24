@@ -313,12 +313,36 @@ export function formatNorm(raw, section = '') {
   // Төгсгөлд үлдсэн дараагийн дэд гарчиг ("Хүчний кабель шугам") — цэг тэмдэггүй, богино, бие даасан мөр
   const last = out[out.length - 1], prev = out[out.length - 2];
   if (last && last.t === 'p' && !endsSentence(last.text) && last.text.split(' ').length <= 6 && (!prev || endsSentence(prev.text))) out.pop();
-  return out;
+  // Дугаарласан заалтын доторх жагсаалт: "... шалгах ёстой, тухайлбал, А хэмжих; Б тодорхойлох;" → дэд жагсаалт
+  for (const b of out) if (b.t === 'li') splitSubs(b);
+  // Дугаарласан хоёр заалтын хооронд орсон догол мөр нь өмнөх заалтын үргэлжлэл (дэд жагсаалттай бол "Тайлбар")
+  const res = [];
+  for (let i = 0; i < out.length; i++) {
+    const b = out[i], pv = res[res.length - 1];
+    if (b.t === 'p' && pv && pv.t === 'li' && out.slice(i + 1).some((x) => x.t === 'li')) {
+      if (pv.subs) pv.subs.push(`Тайлбар: ${b.text}`); else (pv.more = pv.more || []).push(b.text);
+      continue;
+    }
+    res.push(b);
+  }
+  return res;
+}
+
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+function splitSubs(b) {
+  const m = b.text.match(/^(.*?)(?:,\s*тухайлбал,?|\s*:)\s+(.+)$/);
+  if (!m) return;
+  const segs = m[2].split(/;\s*/).map((x) => x.trim()).filter(Boolean);
+  if (segs.length < 2) return;
+  b.text = m[1].replace(/[,:;]\s*$/, '') + ':';
+  b.subs = segs.map((x, i) => cap(x).replace(/[.;]$/, '') + (i < segs.length - 1 ? ';' : '.'));
 }
 
 const escH = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 export function normBlocksHtml(blocks) {
-  return blocks.map((b) => b.t === 'li' ? `<div class="nli"><span class="nn">${escH(b.n)}.</span> ${escH(b.text)}</div>`
+  return blocks.map((b) => b.t === 'li' ? `<div class="nli"><span class="nn">${escH(b.n)}.</span> ${escH(b.text)}`
+      + (b.subs ? `<ul class="nsub">${b.subs.map((x) => `<li>${escH(x)}</li>`).join('')}</ul>` : '')
+      + (b.more ? b.more.map((x) => `<p class="nmore">${escH(x)}</p>`).join('') : '') + '</div>'
     : b.t === 'table' ? `<div class="ntb">Хүснэгт ${escH(b.nums.join(', '))} — эх баримтаас үзнэ үү</div>`
     : `<p class="np">${escH(b.text)}</p>`).join('');
 }
