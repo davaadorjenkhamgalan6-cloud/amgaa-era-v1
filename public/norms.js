@@ -243,3 +243,111 @@ export async function loadBundledAll() {
 export async function loadBundled() {
   const all = await loadBundledAll(); return all[0] || null;
 }
+
+// ================= Заалтын текстийг цэгцлэх (PDF-ээс хуулахад эвдэрсэн мөр, хүснэгт, хуудасны толгойг засах) =================
+// ЦБД (БД 43-101-03)-ийн бүлгүүд
+export const CHAPTERS = {
+  ЦБД: {
+    1: 'ЕРӨНХИЙ ДҮРЭМ',
+    2: 'ЦАХИЛГААН ЭРЧИМ ХҮЧИЙГ ДАМЖУУЛАХ',
+    3: 'РЕЛЕ-ХАМГААЛАЛТ БА АВТОМАТИК',
+    4: 'ХУВААРИЛАХ БАЙГУУЛАМЖ БА ДЭД ӨРТӨӨ',
+    5: 'ЦАХИЛГААН ХҮЧНИЙ ТӨХӨӨРӨМЖ, ЦАХИЛГААНЫ БАЙР',
+    6: 'ЦАХИЛГААН ГЭРЭЛТҮҮЛЭГ БА ОРОН СУУЦ, ОЛОН НИЙТИЙН БАЙГУУЛАМЖИЙН ЦАХИЛГААН ТӨХӨӨРӨМЖ',
+    7: 'ТУСГАЙ ЗОРИУЛАЛТЫН ТӨХӨӨРӨМЖИЙН ЦАХИЛГААН ТОНОГЛОЛ',
+  },
+};
+
+const secNo = (s) => (String(s || '').match(/(\d+(?:\.\d+)*)/) || [])[1] || '';
+// Заалтын дугаарыг тоогоор эрэмбэлэх түлхүүр: 1.7.29 → [1, 7, 29]
+const secKey = (s) => secNo(s).split('.').map(Number);
+const cmpSec = (a, b) => { const x = secKey(a), y = secKey(b); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (x[i] ?? -1) - (y[i] ?? -1); if (d) return d; } return 0; };
+
+export function chapterOf(c) {
+  const code = c.code || CODE, no = Number(secKey(c.section)[0]);
+  const name = CHAPTERS[code] && CHAPTERS[code][no];
+  return name ? { no, name, title: `БҮЛЭГ ${no}. ${name}` } : { no: 0, name: '', title: code };
+}
+
+const ITEM = /^(\d{1,2})\.\s+(?=[А-ЯӨҮЁA-Z«"]|\d+\s*(?:кВ|В|А|мм|м)(?=[\s,.-]|$))/;   // "1. Тусгаарлагын ...", "3. 1 кВ хүртэл ..."
+const isUpper = (s) => /^[«"(]?[А-ЯӨҮЁA-Z]/.test(s);
+const endsSentence = (s) => /[.:;!?)»"]$/.test(s);
+// Хуудасны толгой, хөл: "БҮЛЭГ 1. ЕРӨНХИЙ ДҮРЭМ 87", "БД 43-101-03", "ЕРӨНХИЙ ДҮРЭМ 85", "БҮЛЭГ 1."
+const isPageJunk = (l) => /^БҮЛЭГ\s+\d+\./.test(l) || /^БД\s*43-101-03$/.test(l)
+  || (/^[А-ЯӨҮЁ ,.\-–]{4,}(\s+\d{1,3})?$/.test(l) && !/[а-яөүё]/.test(l));
+// Хүснэгтийн багана нийлсэн мөр ("цахилгаанХэлхээ", "хүчдэлийн500-100010")
+const looksTabular = (l) => /[а-яөүё]{2}[А-ЯӨҮЁ][а-яөүё]/.test(l) || /[а-яөүё]\d{2,}/.test(l) || /^[\d\s,.\-–%]+$/.test(l);
+
+// Текстийг блок болгоно: [{ t: 'p'|'li', n?, text } | { t: 'table', nums }]
+export function formatNorm(raw, section = '') {
+  const lines = fixMn(raw).replace(/\r/g, '').split('\n').map((l) => l.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const sec = secNo(section);
+  const out = [];
+  let inTable = false, cur = null;
+  const flush = () => { if (cur && cur.text.trim()) out.push(cur); cur = null; };
+  for (let i = 0; i < lines.length; i++) {
+    let l = lines[i];
+    if (isPageJunk(l)) continue;
+    // Хүснэгт: эвдэрсэн тул текстийг нь хасаж, дугаарыг нь тэмдэглэнэ
+    const tb = l.match(/^Хүснэгт\s+([\d.]*\d)/);
+    if (tb) {
+      flush(); inTable = true;
+      const lastB = out[out.length - 1];
+      if (lastB && lastB.t === 'table') lastB.nums.push(tb[1]); else out.push({ t: 'table', nums: [tb[1]] });
+      continue;
+    }
+    // Хүснэгт дараагийн дугаарласан заалт хүртэл үргэлжилнэ (гарчиг, багана, тоо нь эвдэрсэн тул харуулахгүй)
+    if (inTable) { if (ITEM.test(l)) inTable = false; else continue; }
+    // Өмнөх хэсгээс үргэлжилсэн хүснэгтийн хог (хэсгийн эхэнд, өгүүлбэр эхлэхээс өмнө)
+    if (!out.length && !cur && looksTabular(l)) continue;
+    if (sec && !out.length && !cur) l = l.replace(new RegExp(`^${sec.replace(/\./g, '\\.')}\\.?\\s*`), '');
+    const m = l.match(ITEM);
+    if (m) { flush(); cur = { t: 'li', n: m[1], text: l.slice(m[0].length) }; continue; }
+    if (cur) {
+      const prev = cur.text;
+      if (endsSentence(prev) && isUpper(l)) { flush(); cur = { t: 'p', text: l }; }
+      else cur.text = /[А-ЯӨҮЁа-яөүёA-Za-z]-$/.test(prev) ? prev + l : `${prev} ${l}`;
+    } else cur = { t: 'p', text: l };
+  }
+  flush();
+  // Төгсгөлд үлдсэн дараагийн дэд гарчиг ("Хүчний кабель шугам") — цэг тэмдэггүй, богино, бие даасан мөр
+  const last = out[out.length - 1], prev = out[out.length - 2];
+  if (last && last.t === 'p' && !endsSentence(last.text) && last.text.split(' ').length <= 6 && (!prev || endsSentence(prev.text))) out.pop();
+  return out;
+}
+
+const escH = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+export function normBlocksHtml(blocks) {
+  return blocks.map((b) => b.t === 'li' ? `<div class="nli"><span class="nn">${escH(b.n)}.</span> ${escH(b.text)}</div>`
+    : b.t === 'table' ? `<div class="ntb">Хүснэгт ${escH(b.nums.join(', '))} — эх баримтаас үзнэ үү</div>`
+    : `<p class="np">${escH(b.text)}</p>`).join('');
+}
+
+// Иш татсан заалтуудыг бүлэг → заалтын дэс дараагаар; нэг заалтын хэд хэдэн хэсгийг нэгтгэнэ.
+// full(code, section) — тухайн заалтын бүх хэсэг (дүрмийн сангаас), байхгүй бол зөвхөн иш татсан хэсгүүд
+export function groupCited(norms, full) {
+  const bySec = new Map();
+  for (const n of norms || []) {
+    const key = `${n.code || CODE}|${secNo(n.section)}`;
+    if (!bySec.has(key)) bySec.set(key, { code: n.code || CODE, section: secNo(n.section), parts: [] });
+    bySec.get(key).parts.push(n);
+  }
+  const secs = [...bySec.values()].map((s) => {
+    const all = (full && full(s.code, s.section)) || [];
+    const parts = all.length ? all : s.parts.slice().sort((a, b) => Number(String(a.id).replace(/\D/g, '')) - Number(String(b.id).replace(/\D/g, '')));
+    const text = parts.map((p) => p.content).join('\n');
+    return { ...s, label: `${s.code} §${s.section}`, chapter: chapterOf(s), blocks: formatNorm(text, s.section), page: parts[0] && parts[0].page };
+  }).sort((a, b) => a.code.localeCompare(b.code) || cmpSec(a.section, b.section));
+  const chapters = [];
+  for (const s of secs) {
+    let ch = chapters[chapters.length - 1];
+    if (!ch || ch.title !== s.chapter.title) chapters.push(ch = { title: s.chapter.title, sections: [] });
+    ch.sections.push(s);
+  }
+  return chapters;
+}
+
+export function citedHtml(norms, full) {
+  return groupCited(norms, full).map((ch) => `<div class="nch">${escH(ch.title)}</div>`
+    + ch.sections.map((s) => `<div class="norm"><b>${escH(s.label)}</b>${normBlocksHtml(s.blocks)}</div>`).join('')).join('');
+}
