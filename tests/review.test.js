@@ -171,3 +171,34 @@ test('Gemini 429 өгвөл агентын ноорог хэвээр, шалтг
   assert.equal(out.conclusion.review.status, 'error');
   assert.match(out.conclusion.review.reason, /Gemini API алдаа 429.*үнэгүй түвшний/);
 });
+
+test('Gemini 503 (ачаалалтай): эхний алхамд нөөц загвар руу шилжиж, хяналт ч нөөцөөр хийгдэнэ', async () => {
+  const fc = (name, args = {}) => ({ functionCall: { name, args } });
+  const script = [[fc('calculate_score'), ...SEARCHES.map((q) => fc('search_norms', { query: q }))], [fc('submit_conclusion', good)]];
+  let n = 0; const urls = [];
+  const busy = { ok: false, status: 503, json: async () => ({ error: { message: 'This model is currently experiencing high demand.' } }) };
+  const fetchFn = async (url, opts) => {
+    urls.push(url); const body = JSON.parse(opts.body);
+    if (/gemini-3\.5-flash:/.test(url)) return busy;            // үндсэн загвар ачаалалтай
+    if (body.toolConfig) return { ok: true, json: async () => ({ candidates: [{ content: { parts: [fc('submit_review', editOf(good))] } }] }) };
+    return { ok: true, json: async () => ({ candidates: [{ content: { role: 'model', parts: script[n++] } }] }) };
+  };
+  const out = await runAgent(clone(sample), { provider: 'gemini', env: { GEMINI_API_KEY: 'g', GEMINI_RETRY_MS: '0' }, fetchFn, searchNorms: demoSearchNorms, review: true });
+  assert.equal(out.stage, 'draft_ready');
+  assert.match(urls[1], /gemini-flash-latest:/);
+  assert.equal(out.conclusion.review.status, 'applied');
+});
+
+test('Gemini 503 яриа эхэлсний дараа: мөн загвараа хүлээгээд дахин оролдоно', async () => {
+  const fc = (name, args = {}) => ({ functionCall: { name, args } });
+  const script = [[fc('calculate_score'), ...SEARCHES.map((q) => fc('search_norms', { query: q }))], [fc('submit_conclusion', good)]];
+  let n = 0, calls = 0; const urls = [];
+  const fetchFn = async (url) => {
+    urls.push(url); calls++;
+    if (calls === 2) return { ok: false, status: 503, json: async () => ({ error: { message: 'busy' } }) };
+    return { ok: true, json: async () => ({ candidates: [{ content: { role: 'model', parts: script[n++] } }] }) };
+  };
+  const out = await runAgent(clone(sample), { provider: 'gemini', env: { GEMINI_API_KEY: 'g', GEMINI_RETRY_MS: '0' }, fetchFn, searchNorms: demoSearchNorms });
+  assert.equal(out.stage, 'draft_ready');
+  assert.ok(urls.every((u) => /gemini-3\.5-flash:/.test(u)), 'яриа эхэлсний дараа загвар солихгүй');
+});
