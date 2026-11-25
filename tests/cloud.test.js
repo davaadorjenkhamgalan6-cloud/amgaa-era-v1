@@ -78,7 +78,7 @@ test('/api/records: кодгүй хүн харна, бичиж чадахгүй;
     await handler({ method: 'POST', headers: { 'x-edit-code': 'secret' }, body: { records: [rec('c', '3')] } }, res);
     assert.equal(res.code, 200);
     const post = calls.find((c) => c.init.method === 'POST');
-    assert.match(post.url, /inspections\?on_conflict=id/);
+    assert.match(post.url, /era_inspections\?on_conflict=id/);
     assert.equal(JSON.parse(post.init.body)[0].id, 'c');
     assert.equal(post.init.headers.apikey, 'svc');
   } finally {
