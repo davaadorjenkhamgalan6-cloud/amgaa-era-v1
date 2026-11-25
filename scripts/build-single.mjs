@@ -14,6 +14,7 @@ const names = [...normsSrc.matchAll(/^export (?:async )?(?:function|const) (\w+)
 const normsInline = `const N = (() => {\n${normsSrc.replace(/^export /gm, '')}\nreturn { ${names.join(', ')} };\n})();`;
 
 rep('<script src="files.js"></script>', `<script>\n${safe(R('files.js'))}\n</script>`);
+rep('<script src="cloud.js"></script>', `<script>\n${safe(R('cloud.js'))}\n</script>`);
 rep('<script src="report.js"></script>', `<script>\n${safe(R('report.js'))}\nEraReport.ORG.cover = ${JSON.stringify(cover)};\n</script>
 <script>\n${safe(R('vendor/docx.umd.js'))}\n</script>
 <script type="text/plain" id="pdfjs-main">${safe(R('vendor/pdfjs/pdf.min.mjs'))}</script>

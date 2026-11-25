@@ -310,6 +310,14 @@
   @media (max-width:1400px) { #statusTxt { display:none; } .status { padding:8px; } }
   @media (max-width:1100px) { .crumb { display:none; } }
   @media (max-width:820px) { .regbtn .lbl2 { display:none; } }
+  .cloudbar { margin:10px auto 0; padding:9px 14px; border-radius:10px; font-size:13.5px; background:rgba(59,91,255,.12); border:1px solid rgba(99,123,255,.35); color:#c7d2fe; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .cloudbar b { color:#fff; } .cloudbar button { padding:5px 12px; font-size:12.5px; }
+  body.ro section[data-view="object"] :is(input,textarea,select,button),
+  body.ro section[data-view="checklist"] :is(input,textarea,select,button),
+  body.ro section[data-view="scores"] :is(input,textarea,select,button),
+  body.ro section[data-view="measure"] :is(input,textarea,select,button),
+  body.ro section[data-view="files"] :is(input,textarea,select,button) { pointer-events:none; opacity:.65; }
+  body.ro .ro-hide { display:none !important; }
   .curbar { font-size:13.5px; color:var(--muted); margin:0 0 12px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; align-items:center; }
   .curbar b { color:#fff; }
   .lnk { color:var(--cyan); cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
@@ -426,9 +434,11 @@
     <button class="regbtn" type="button" onclick="go('plans')" title="Үзлэгийн төлөвлөгөө">📅 <span class="lbl2">Төлөвлөгөө</span> <span class="cnt" id="planCnt">0</span></button>
     <button class="regbtn" type="button" onclick="go('orgs')" title="Үзлэг хийсэн байгууллагууд">🏢 <span class="lbl2">Байгууллагууд</span> <span class="cnt" id="orgCnt">0</span></button>
     <button class="regbtn" type="button" onclick="go('chat')" title="Цахилгааны хууль, дүрмийн чатбот">💬 <span class="lbl2">Хууль, дүрэм</span></button>
+    <button class="regbtn hidden" type="button" id="cloudBtn" onclick="cloudClick()"></button>
     <span class="status"><span class="dot" id="dot"></span><span id="statusTxt">Шалгаж байна…</span></span>
   </div>
 </div></header>
+<div class="wrap no-print"><div class="cloudbar hidden" id="cloudBar"></div></div>
 
 <!-- ============ ТӨВ ============ -->
 <section class="view hero no-print" data-view="">
@@ -442,7 +452,7 @@
       <div class="chips" id="chipsOut"></div>
     </div>
     <p class="tag">Тойрог бүр дээр дарж тухайн хэсэг рүү орно. Зүүн тал — инженерийн оруулах мэдээлэл, баруун тал — AI агентын гаргах үр дүн.</p>
-    <div class="curbar">Одоогийн үзлэг: <b id="curName">—</b> · <span class="lnk" onclick="go('registry')">Бүртгэл</span> · <span class="lnk" onclick="go('orgs')">Байгууллагууд</span> · <span class="lnk" onclick="go('chat')">Хууль, дүрмийн чатбот</span> · <span class="lnk" onclick="newInspection()">+ Шинэ үзлэг</span></div>
+    <div class="curbar">Одоогийн үзлэг: <b id="curName">—</b> · <span class="lnk" onclick="go('registry')">Бүртгэл</span> · <span class="lnk" onclick="go('orgs')">Байгууллагууд</span> · <span class="lnk" onclick="go('chat')">Хууль, дүрмийн чатбот</span> · <span class="lnk ro-hide" onclick="newInspection()">+ Шинэ үзлэг</span></div>
     <div class="progress" id="progress"></div>
     <button class="big" type="button" onclick="go('object')">Үзлэг эхлүүлэх →</button>
   </div>
@@ -615,6 +625,7 @@
 
 <script src="files.js"></script>
 <script src="report.js"></script>
+<script src="cloud.js"></script>
 <script>
 // ---- Тохиргоо (серверийн lib/agent/config.js-тэй ижил байх ёстой) ----
 const INDICATORS = [
@@ -1058,10 +1069,16 @@ $('f_date').value = new Date().toISOString().slice(0, 10);
 
 // ================= Үзлэгийн бүртгэл (энэ хөтөч дээр хадгалагдана) =================
 const DB_KEY = 'amgaa_inspections_v1', CUR_KEY = 'amgaa_current_v1';
+const EDIT_KEY = 'amgaa_edit_code', VIEW_KEY = 'amgaa_view_code', TOMB_KEY = 'amgaa_tomb_v1';
+const cloud = { on: false, canEdit: false, ro: false, sent: {}, t: null, busy: false, err: '' };
 let records = [], currentId = null, saveT;
 const nowIso = () => new Date().toISOString();
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-function persist() { store.set(DB_KEY, JSON.stringify(records)); store.set(CUR_KEY, currentId || ''); }
+function persist() {
+  if (cloud.ro) return;                        // зөвхөн харах горимд энэ хөтчийн өгөгдлийг дарахгүй
+  store.set(DB_KEY, JSON.stringify(records)); store.set(CUR_KEY, currentId || '');
+  cloudQueue();
+}
 function cur() { return records.find((r) => r.id === currentId); }
 function makeRecord() { const r = { id: uid(), created: nowIso(), updated: nowIso(), data: {}, result: null }; records.unshift(r); currentId = r.id; persist(); return r; }
 function loadDB() {
@@ -1110,17 +1127,20 @@ function openInspection(id, nav) {
   updateStatus(); if (nav !== false) go('');
 }
 function newInspection() {
+  if (roBlock()) return;
   clearTimeout(saveT);
   makeRecord(); resetForm(); lastResult = null; cur().data = collect(); persist();
   att = []; refreshFiles();
   updateStatus(); go('object');
 }
 function deleteInspection(id, btn) {
+  if (roBlock()) return;
   if (!btn.classList.contains('sure')) {
     btn.classList.add('sure'); btn.textContent = 'Тийм, устгах';
     setTimeout(() => { btn.classList.remove('sure'); btn.textContent = 'Устгах'; }, 4000); return;
   }
   records = records.filter((r) => r.id !== id);
+  cloudDelete(id);
   EraFiles.removeInsp(id).catch(() => {});
   if (id === currentId) {
     if (records.length) { currentId = records[0].id; resetForm(); applyData(cur().data); lastResult = cur().result || null; }
@@ -1698,8 +1718,95 @@ function exportCsv() {
   EraFiles.download(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }),
     `amgaa-era-${regTab === 'orgs' ? 'baiguullaga' : 'uzleg'}-${new Date().toISOString().slice(0, 10)}.csv`);
 }
+
+// ================= Нийтлэг сан (Supabase, /api/records) =================
+// Засварлах кодтой хөтөч (та) → үзлэг бүр автоматаар санд хадгалагдана.
+// Кодгүй хүн линкээр орвол → сангийн бүх үзлэгийг ЗӨВХӨН ХАРНА.
+const cloudHdr = () => { const h = {}, e = store.get(EDIT_KEY), v = store.get(VIEW_KEY); if (e) h['x-edit-code'] = e; if (v) h['x-view-code'] = v; return h; };
+const tombs = () => { try { return JSON.parse(store.get(TOMB_KEY) || '[]'); } catch { return []; } };
+function roBlock() { if (!cloud.ro) return false; alert('Зөвхөн харах горим: үзлэгийг өөрчлөх боломжгүй.'); return true; }
+function localCount() { try { return JSON.parse(store.get(DB_KEY) || '[]').filter((r) => !EraCloud.isBlank(r)).length; } catch { return 0; } }
+function cloudBadge() {
+  const b = $('cloudBtn'), bar = $('cloudBar');
+  if (!cloud.on) { b.classList.add('hidden'); bar.classList.add('hidden'); return; }
+  b.classList.remove('hidden');
+  b.innerHTML = cloud.ro ? '👁 <span class="lbl2">Зөвхөн харах</span>'
+    : cloud.err ? '⚠️ <span class="lbl2">Хадгалагдсангүй</span>'
+    : (cloud.busy || cloud.t) ? '☁️ <span class="lbl2">Хадгалж байна…</span>' : '☁️ <span class="lbl2">Санд хадгалагдсан</span>';
+  b.title = cloud.ro ? 'Засварлах код оруулах бол дарна уу' : cloud.err || 'Үзлэгүүд нийтлэг санд хадгалагдаж, линкээр орсон хүн бүр харна. Дарж кодоо мартуулна.';
+  if (cloud.ro) {
+    const n = localCount();
+    bar.innerHTML = `👁 <b>Зөвхөн харах горим</b> — үзлэгүүдийг харж, тайлан татаж болно, өөрчлөх боломжгүй.` +
+      (n ? ` Энэ хөтөч дээр <b>${n}</b> үзлэг байна — эзэмшигч бол засварлах кодоо оруулж санд нэгтгэнэ үү. <button type="button" onclick="cloudClick()">Код оруулах</button>` : '');
+    bar.classList.remove('hidden');
+  } else if (cloud.err) {
+    bar.innerHTML = `⚠️ ${esc(cloud.err)} <button type="button" onclick="cloudPush()">Дахин оролдох</button>`; bar.classList.remove('hidden');
+  } else bar.classList.add('hidden');
+}
+async function cloudInit(again) {
+  let s;
+  try { const r = await fetch('/api/records', { headers: cloudHdr() }); s = await r.json(); } catch { return; }
+  if (!s || !s.configured || !s.editReady) return;      // сан тохируулаагүй → өмнөх шигээ энэ хөтөч дээр л
+  if (s.needsView) {
+    if (again) store.del(VIEW_KEY);
+    const c = (prompt('Үзлэгийн бүртгэл харах код:') || '').trim(); if (!c) return;
+    store.set(VIEW_KEY, c); return cloudInit(true);
+  }
+  const remote = s.records || [];
+  let local = records;                                 // өмнө нь зөвхөн харах горимд байсан бол энэ хөтчийн өгөгдлийг дахин уншина
+  if (cloud.ro) { try { local = JSON.parse(store.get(DB_KEY) || '[]'); } catch { local = []; } }
+  cloud.on = true; cloud.canEdit = Boolean(s.canEdit); cloud.ro = !cloud.canEdit; cloud.err = '';
+  cloud.sent = Object.fromEntries(remote.map((r) => [r.id, JSON.stringify(r)]));
+  const before = cur(); clearTimeout(saveT);
+  records = EraCloud.merge(cloud.canEdit ? local : [], remote).records;
+  if (!records.length) records = [{ id: uid(), created: nowIso(), updated: nowIso(), data: {}, result: null }];
+  if (!records.some((r) => r.id === currentId)) currentId = records[0].id;
+  document.body.classList.toggle('ro', cloud.ro);
+  if (cur() !== before) { resetForm(); applyData(cur().data); lastResult = cur().result || null; att = []; refreshFiles(); }
+  persist();                                           // эзэмшигч: энэ хөтөч дээрх шинэ үзлэгүүд санд илгээгдэнэ
+  route(); cloudBadge();
+}
+function cloudQueue() {
+  if (!cloud.on || !cloud.canEdit) return;
+  clearTimeout(cloud.t); cloud.t = setTimeout(cloudPush, 1200); cloudBadge();
+}
+async function cloudPush() {
+  clearTimeout(cloud.t); cloud.t = null;
+  if (!cloud.on || !cloud.canEdit) return;
+  if (cloud.busy) { cloudQueue(); return; }
+  const list = [...tombs(), ...EraCloud.changed(records, cloud.sent)];
+  if (!list.length) { cloud.err = ''; cloudBadge(); return; }
+  cloud.busy = true; cloudBadge();
+  try {
+    for (let i = 0; i < list.length; i += 10) {          // том үзлэгүүдийг хэсэгчлэн илгээнэ
+      const part = list.slice(i, i + 10), snap = part.map((r) => [r.id, JSON.stringify(r)]);
+      const r = await fetch('/api/records', { method: 'POST', headers: { 'Content-Type': 'application/json', ...cloudHdr() }, body: JSON.stringify({ records: part }) });
+      const out = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(out.error || 'HTTP ' + r.status);
+      snap.forEach(([id, j]) => { cloud.sent[id] = j; });
+      const done = new Set(part.filter((x) => x.deleted).map((x) => x.id));
+      if (done.size) store.set(TOMB_KEY, JSON.stringify(tombs().filter((t) => !done.has(t.id))));
+    }
+    cloud.err = '';
+  } catch (e) { cloud.err = 'Санд хадгалж чадсангүй: ' + e.message; setTimeout(cloudQueue, 30000); }
+  cloud.busy = false; cloudBadge();
+}
+function cloudDelete(id) {
+  if (!cloud.on || !cloud.canEdit) return;
+  store.set(TOMB_KEY, JSON.stringify([...tombs().filter((t) => t.id !== id), { id, deleted: true, updated: nowIso() }]));
+  delete cloud.sent[id]; cloudQueue();
+}
+async function cloudClick() {
+  if (cloud.ro) {
+    const c = (prompt('Засварлах код (зөвхөн эзэмшигч):') || '').trim(); if (!c) return;
+    store.set(EDIT_KEY, c); await cloudInit();
+    if (cloud.ro) { store.del(EDIT_KEY); alert('Засварлах код буруу байна.'); }
+  } else if (cloud.err) cloudPush();
+  else if (confirm('Энэ хөтөч дээрх засварлах кодыг устгах уу? Дараа нь энэ хөтөч зөвхөн харах горимд орно.')) { store.del(EDIT_KEY); cloudInit(); }
+}
 loadDB(); applyData(cur().data); autoScores(); lastResult = cur().result || null;
 refreshFiles();
+cloudInit();
 syncRequests(); setInterval(syncRequests, 5 * 60 * 1000);
 $('form').addEventListener('input', saveDraft);
 $('form').addEventListener('change', saveDraft);
